@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô hình 3D Chibi Girl (Three.js Low-Poly)</title>
+  <style>
+    :root {
+      --bg-dark: #1e2025;
+      --panel-bg: rgba(28, 30, 38, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --accent: #ff7e9e;
+      --accent-hover: #ff9cb5;
+      --text-main: #f0f2f5;
+      --text-dim: #9aa0b0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .brand-badge h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(18, 20, 26, 0.88);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .char-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #e8597b, #c4385a);
+      box-shadow: 0 2px 10px rgba(232, 89, 123, 0.4);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn:hover {
+      background: rgba(45, 49, 62, 0.9);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e8597b, #c4385a);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #f56b8c, #d64567);
+      box-shadow: 0 6px 20px rgba(232, 89, 123, 0.4);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 320px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(360px);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-small {
+      padding: 7px 10px;
+      font-size: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #ddd;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-small:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .btn-small.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .color-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .color-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .color-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .color-row input[type="color"]::-webkit-color-swatch {
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+    }
+
+    /* Bottom Quick Toolbar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 6px 12px;
+      border-radius: 30px;
+      display: flex;
+      gap: 6px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .pill-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .pill-btn.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* Picture-in-Picture Reference Window */
+    #reference-modal {
+      position: absolute;
+      bottom: 90px;
+      left: 24px;
+      z-index: 20;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 220px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    #reference-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.9) translateY(20px);
+    }
+
+    .ref-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .ref-close {
+      cursor: pointer;
+      color: #888;
+      font-size: 16px;
+      background: none;
+      border: none;
+    }
+
+    .ref-close:hover {
+      color: #fff;
+    }
+
+    #reference-modal img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: calc(100vw - 40px);
+        max-height: 50vh;
+        top: auto;
+      }
+      #reference-modal {
+        width: 160px;
+        bottom: 80px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🌸 Chibi Girl 3D Model</h1>
+      <p>Three.js Low-Poly Recreation từ <code>girl.png</code></p>
+    </div>
+
+    <!-- Character Switcher -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn active">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-toggle-ref" class="btn">🖼️ Ảnh gốc mẫu</button>
+      <button id="btn-export-glb" class="btn btn-primary">💾 Tải file .GLB</button>
+      <button id="btn-export-obj" class="btn">📦 Tải .OBJ</button>
+      <button id="btn-screenshot" class="btn">📸 Chụp ảnh</button>
+      <button id="btn-toggle-sidebar" class="btn">⚙️ Bảng điều khiển</button>
+    </div>
+  </header>
+
+  <!-- Side Control Drawer -->
+  <aside id="sidebar" class="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">📷 Góc nhìn (Camera Views)</div>
+      <div class="button-grid">
+        <button class="btn-small active" onclick="setCameraView('front')">Mặt trước</button>
+        <button class="btn-small" onclick="setCameraView('perspective')">Góc 3/4</button>
+        <button class="btn-small" onclick="setCameraView('side')">Nhìn nghiêng</button>
+        <button class="btn-small" onclick="setCameraView('back')">Phía sau</button>
+        <button class="btn-small" onclick="setCameraView('top')">Từ trên xuống</button>
+        <button class="btn-small" id="btn-auto-rotate" onclick="toggleAutoRotate()">Tự xoay: Tắt</button>
+      </div>
+    </div>
+
+    <!-- Poses & Animations -->
+    <div class="sidebar-section">
+      <div class="section-title">💃 Tư thế & Chuyển động</div>
+      <div class="button-grid">
+        <button class="btn-small active" id="btn-pose-t" onclick="setPose('t-pose')">🧍 T-Pose (Gốc)</button>
+        <button class="btn-small" id="btn-pose-a" onclick="setPose('a-pose')">🚶 Thả lỏng</button>
+        <button class="btn-small" id="btn-anim-idle" onclick="toggleAnimation('idle')">🫁 Thở nhẹ: Bật</button>
+        <button class="btn-small" id="btn-anim-wave" onclick="toggleAnimation('wave')">👋 Vẫy tay</button>
+      </div>
+    </div>
+
+    <!-- Lighting & Shading -->
+    <div class="sidebar-section">
+      <div class="section-title">💡 Hiển thị & Ánh sáng</div>
+      <div class="button-grid">
+        <button class="btn-small" id="btn-wireframe" onclick="toggleWireframe()">Khung dây: Tắt</button>
+        <button class="btn-small active" id="btn-flatshading" onclick="toggleFlatShading()">Bóng phẳng: Bật</button>
+      </div>
+      <div class="button-grid" style="margin-top: 6px;">
+        <button class="btn-small active" onclick="setLighting('studio')">Studio</button>
+        <button class="btn-small" onclick="setLighting('dramatic')">Kịch tính</button>
+        <button class="btn-small" onclick="setLighting('soft')">Mềm mại</button>
+        <button class="btn-small" onclick="setLighting('bright')">Tươi sáng</button>
+      </div>
+    </div>
+
+    <!-- Color Customization -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Tùy chỉnh màu sắc</div>
+      <div class="color-row">
+        <span>Tóc (Hair)</span>
+        <input type="color" id="picker-hair" value="#2d303d">
+      </div>
+      <div class="color-row">
+        <span>Da (Skin)</span>
+        <input type="color" id="picker-skin" value="#f7c7b2">
+      </div>
+      <div class="color-row">
+        <span>Áo (Shirt)</span>
+        <input type="color" id="picker-shirt" value="#525866">
+      </div>
+      <div class="color-row">
+        <span>Quần (Pants)</span>
+        <input type="color" id="picker-pants" value="#4a505d">
+      </div>
+      <div class="color-row">
+        <span>Màu nền (Background)</span>
+        <input type="color" id="picker-bg" value="#2d2f34">
+      </div>
+      <button class="btn-small" onclick="resetDefaultColors()" style="margin-top: 6px;">↺ Khôi phục màu gốc</button>
+    </div>
+
+    <!-- Export Section -->
+    <div class="sidebar-section">
+      <div class="section-title">📦 Xuất dữ liệu 3D</div>
+      <button class="btn btn-primary" onclick="exportGLB()" style="width: 100%; justify-content: center;">
+        💾 Tải .GLB (glTF Binary)
+      </button>
+      <button class="btn" onclick="exportOBJ()" style="width: 100%; justify-content: center;">
+        📦 Tải .OBJ (Wavefront)
+      </button>
+    </div>
+  </aside>
+
+  <!-- Bottom Quick Camera Pills -->
+  <div class="bottom-bar">
+    <button class="pill-btn active" onclick="setCameraView('front')">📷 Trước</button>
+    <button class="pill-btn" onclick="setCameraView('perspective')">📐 3/4</button>
+    <button class="pill-btn" onclick="setCameraView('side')">👤 Nghiêng</button>
+    <button class="pill-btn" onclick="setCameraView('back')">🔙 Sau</button>
+    <button class="pill-btn" id="pill-rotate" onclick="toggleAutoRotate()">🔄 Xoay</button>
+  </div>
+
+  <!-- Reference Picture-in-Picture -->
+  <div id="reference-modal">
+    <div class="ref-header">
+      <span>Ảnh mẫu gốc (girl.png)</span>
+      <button class="ref-close" id="btn-close-ref">✕</button>
+    </div>
+    <img src="girl.png" alt="Ảnh mẫu gốc girl.png">
+  </div>
+
+  <!-- App Script -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createGirlCharacter, DEFAULT_COLORS } from './girl-model.js';
+
+    const container = document.getElementById('canvas-container');
+
+    // 1. Scene Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2d2f34);
+
+    // 2. Camera Setup
+    const camera = new THREE.PerspectiveCamera(32, window.innerWidth / window.innerHeight, 0.1, 100);
+    const cameraTargets = {
+      front: { pos: new THREE.Vector3(-0.40, 1.15, 5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      perspective: { pos: new THREE.Vector3(2.5, 1.6, 4.5), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      side: { pos: new THREE.Vector3(4.8, 1.15, 0), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      back: { pos: new THREE.Vector3(-0.40, 1.15, -5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      top: { pos: new THREE.Vector3(-0.40, 5.8, 0.1), target: new THREE.Vector3(-0.40, 1.11, 0) }
+    };
+    camera.position.copy(cameraTargets.front.pos);
+
+    // 3. Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.06;
+    container.appendChild(renderer.domElement);
+
+    // 4. OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(cameraTargets.front.target);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.maxDistance = 18;
+    controls.minDistance = 2;
+    controls.update();
+
+    // 5. Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.95);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.20);
+    keyLight.position.set(3.2, 4.8, 4.2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.65);
+    fillLight.position.set(-4.0, 2.5, 3.0);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff5ea, 0.50);
+    frontLight.position.set(0, 1.5, 5.0);
+    scene.add(frontLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    rimLight.position.set(0, 4.5, -4.0);
+    scene.add(rimLight);
+
+    // 6. Character Instance
+    let character = createGirlCharacter();
+    scene.add(character.model);
+    const initialHeadY = character.parts.headGroup.position.y;
+
+    // Animation & Posing State
+    let currentPose = 't-pose';
+    let isIdleBreathing = true;
+    let isWaving = false;
+    let clock = new THREE.Clock();
+
+    // Posing Logic
+    window.setPose = function(poseName) {
+      currentPose = poseName;
+      document.querySelectorAll('#btn-pose-t, #btn-pose-a').forEach(b => b.classList.remove('active'));
+
+      if (poseName === 't-pose') {
+        document.getElementById('btn-pose-t').classList.add('active');
+        character.parts.leftArmGroup.rotation.z = 0.16;
+        character.parts.rightArmGroup.rotation.z = -0.16;
+        character.parts.leftArmGroup.rotation.x = 0;
+        character.parts.rightArmGroup.rotation.x = 0;
+      } else if (poseName === 'a-pose') {
+        document.getElementById('btn-pose-a').classList.add('active');
+        character.parts.leftArmGroup.rotation.z = 0.75;
+        character.parts.rightArmGroup.rotation.z = -0.75;
+        character.parts.leftArmGroup.rotation.x = 0.1;
+        character.parts.rightArmGroup.rotation.x = 0.1;
+      }
+    };
+
+    window.toggleAnimation = function(anim) {
+      if (anim === 'idle') {
+        isIdleBreathing = !isIdleBreathing;
+        document.getElementById('btn-anim-idle').innerText = `🫁 Thở nhẹ: ${isIdleBreathing ? 'Bật' : 'Tắt'}`;
+        document.getElementById('btn-anim-idle').classList.toggle('active', isIdleBreathing);
+      } else if (anim === 'wave') {
+        isWaving = !isWaving;
+        document.getElementById('btn-anim-wave').classList.toggle('active', isWaving);
+      }
+    };
+
+    // Camera Views
+    window.setCameraView = function(viewName) {
+      const cfg = cameraTargets[viewName];
+      if (!cfg) return;
+
+      // Animate camera smoothly
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const duration = 600;
+      const startTime = performance.now();
+
+      function updateCam(t) {
+        const elapsed = t - startTime;
+        const p = Math.min(1, elapsed / duration);
+        // EaseOutCubic
+        const ease = 1 - Math.pow(1 - p, 3);
+        camera.position.lerpVectors(startPos, cfg.pos, ease);
+        controls.target.lerpVectors(startTarget, cfg.target, ease);
+        controls.update();
+        if (p < 1) requestAnimationFrame(updateCam);
+      }
+      requestAnimationFrame(updateCam);
+
+      // Update active pills
+      document.querySelectorAll('.bottom-bar .pill-btn, .sidebar .btn-small').forEach(btn => {
+        if (btn.innerText.includes(viewName) || (viewName === 'front' && btn.innerText.includes('Trước'))) {
+          btn.classList.add('active');
+        }
+      });
+    };
+
+    // Auto Rotate
+    window.toggleAutoRotate = function() {
+      controls.autoRotate = !controls.autoRotate;
+      controls.autoRotateSpeed = 2.5;
+      const state = controls.autoRotate ? 'Bật' : 'Tắt';
+      document.getElementById('btn-auto-rotate').innerText = `Tự xoay: ${state}`;
+      document.getElementById('btn-auto-rotate').classList.toggle('active', controls.autoRotate);
+      document.getElementById('pill-rotate').classList.toggle('active', controls.autoRotate);
+    };
+
+    // Wireframe Toggle
+    let isWireframe = false;
+    window.toggleWireframe = function() {
+      isWireframe = !isWireframe;
+      character.setWireframe(isWireframe);
+      document.getElementById('btn-wireframe').innerText = `Khung dây: ${isWireframe ? 'Bật' : 'Tắt'}`;
+      document.getElementById('btn-wireframe').classList.toggle('active', isWireframe);
+    };
+
+    // Flat Shading Toggle
+    let isFlatShading = true;
+    window.toggleFlatShading = function() {
+      isFlatShading = !isFlatShading;
+      for (const key in character.materials) {
+        character.materials[key].flatShading = isFlatShading;
+        character.materials[key].needsUpdate = true;
+      }
+      document.getElementById('btn-flatshading').innerText = `Bóng phẳng: ${isFlatShading ? 'Bật' : 'Tắt'}`;
+      document.getElementById('btn-flatshading').classList.toggle('active', isFlatShading);
+    };
+
+    // Lighting Presets
+    window.setLighting = function(preset) {
+      if (preset === 'studio') {
+        ambientLight.intensity = 0.90;
+        keyLight.intensity = 1.35;
+        keyLight.color.set(0xfff7ee);
+        fillLight.intensity = 0.65;
+        rimLight.intensity = 0.45;
+      } else if (preset === 'dramatic') {
+        ambientLight.intensity = 0.4;
+        keyLight.intensity = 2.0;
+        keyLight.color.set(0xffeedd);
+        fillLight.intensity = 0.3;
+        rimLight.intensity = 1.2;
+      } else if (preset === 'soft') {
+        ambientLight.intensity = 1.2;
+        keyLight.intensity = 0.8;
+        fillLight.intensity = 0.8;
+        rimLight.intensity = 0.3;
+      } else if (preset === 'bright') {
+        ambientLight.intensity = 1.1;
+        keyLight.intensity = 1.6;
+        fillLight.intensity = 0.9;
+        rimLight.intensity = 0.6;
+      }
+    };
+
+    // Color Pickers
+    document.getElementById('picker-hair').addEventListener('input', (e) => {
+      character.materials.hair.color.set(e.target.value);
+    });
+    document.getElementById('picker-skin').addEventListener('input', (e) => {
+      character.materials.skin.color.set(e.target.value);
+    });
+    document.getElementById('picker-shirt').addEventListener('input', (e) => {
+      character.materials.shirt.color.set(e.target.value);
+    });
+    document.getElementById('picker-pants').addEventListener('input', (e) => {
+      character.materials.pants.color.set(e.target.value);
+    });
+    document.getElementById('picker-bg').addEventListener('input', (e) => {
+      scene.background.set(e.target.value);
+    });
+
+    window.resetDefaultColors = function() {
+      document.getElementById('picker-hair').value = DEFAULT_COLORS.hair;
+      document.getElementById('picker-skin').value = DEFAULT_COLORS.skin;
+      document.getElementById('picker-shirt').value = DEFAULT_COLORS.shirt;
+      document.getElementById('picker-pants').value = DEFAULT_COLORS.pants;
+      document.getElementById('picker-bg').value = '#2d2f34';
+
+      character.setColors(DEFAULT_COLORS);
+      scene.background.set(0x2d2f34);
+    };
+
+    // Reference Modal Toggle
+    const refModal = document.getElementById('reference-modal');
+    document.getElementById('btn-toggle-ref').addEventListener('click', () => {
+      refModal.classList.toggle('hidden');
+    });
+    document.getElementById('btn-close-ref').addEventListener('click', () => {
+      refModal.classList.add('hidden');
+    });
+
+    // Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+
+    // GLB Export
+    window.exportGLB = function() {
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        character.model,
+        function (gltf) {
+          const blob = new Blob([gltf], { type: 'application/octet-stream' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'chibi-girl.glb';
+          link.click();
+        },
+        function (error) {
+          console.error('Lỗi khi xuất glTF:', error);
+          alert('Có lỗi khi tạo file GLB.');
+        },
+        { binary: true }
+      );
+    };
+    document.getElementById('btn-export-glb').addEventListener('click', window.exportGLB);
+
+    // OBJ Export
+    window.exportOBJ = function() {
+      const exporter = new OBJExporter();
+      const result = exporter.parse(character.model);
+      const blob = new Blob([result], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'chibi-girl.obj';
+      link.click();
+    };
+    document.getElementById('btn-export-obj').addEventListener('click', window.exportOBJ);
+
+    // HD Screenshot
+    window.takeScreenshot = function() {
+      renderer.render(scene, camera);
+      const dataURL = renderer.domElement.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'chibi-girl-render.png';
+      link.href = dataURL;
+      link.click();
+    };
+    document.getElementById('btn-screenshot').addEventListener('click', window.takeScreenshot);
+
+    // Render & Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+
+      // Idle breathing animation
+      if (isIdleBreathing) {
+        const breath = Math.sin(elapsedTime * 2.5) * 0.015;
+        character.parts.headGroup.position.y = initialHeadY + breath * 0.5;
+        character.parts.headGroup.rotation.x = Math.sin(elapsedTime * 1.5) * 0.02;
+
+        if (currentPose === 't-pose') {
+          character.parts.leftArmGroup.rotation.z = 0.16 + breath * 0.8;
+          character.parts.rightArmGroup.rotation.z = -0.16 - breath * 0.8;
+        }
+      }
+
+      // Cute wave animation
+      if (isWaving) {
+        character.parts.rightArmGroup.rotation.z = -1.8;
+        character.parts.rightArmGroup.rotation.x = Math.sin(elapsedTime * 8) * 0.25;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Window Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

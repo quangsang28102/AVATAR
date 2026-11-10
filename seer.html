@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô hình 3D Seer — Nhà Tiên Tri Phép Thuật (Three.js Low-Poly Chibi Fantasy)</title>
+  <style>
+    :root {
+      --bg-dark: #191422;
+      --panel-bg: rgba(25, 20, 36, 0.88);
+      --panel-border: rgba(222, 85, 251, 0.22);
+      --accent: #de55fb;
+      --accent-hover: #ea7eff;
+      --accent-glow: rgba(222, 85, 251, 0.45);
+      --accent-magenta: #a82fa0;
+      --text-main: #f3effa;
+      --text-dim: #a69bb8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-badge h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-badge p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(18, 14, 26, 0.90);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .char-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #a322bd, #631278);
+      box-shadow: 0 2px 14px rgba(163, 34, 189, 0.5);
+      border: 1px solid rgba(222, 85, 251, 0.4);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn:hover {
+      background: rgba(48, 38, 68, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ba2ee4, #731393);
+      border-color: rgba(222, 85, 251, 0.4);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #d33dfc, #8c1bb3);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(370px);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(222, 85, 251, 0.22);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Sidebar Toggle Floating Button */
+    #sidebar-toggle-btn {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      z-index: 11;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+    }
+
+    /* Bottom Info Badge */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-pill b {
+      color: #fff;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 290px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🔮 Seer (Nhà Tiên Tri) <span>✨</span></h1>
+      <p>3D Low-Poly Stylized Fantasy Character • Three.js</p>
+    </div>
+
+    <!-- Character Switcher Bar -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn active">🔮 Seer</a>
+    </div>
+
+    <!-- Quick Export Actions -->
+    <div class="top-actions">
+      <a href="comparison_seer.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
+      <button id="btn-export-glb" class="btn btn-primary" title="Tải mô hình chuẩn 3D GLB">📦 Tải .GLB</button>
+      <button id="btn-export-obj" class="btn" title="Tải file OBJ Wavefront">💾 Tải .OBJ</button>
+    </div>
+  </header>
+
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
+      </div>
+    </div>
+
+    <!-- Pose Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🧍 Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="idle">🔮 Mặc định (Idle)</button>
+        <button class="btn-option" data-pose="cast">⚡ Bắn phép (Cast)</button>
+        <button class="btn-option" data-pose="meditate">🧘 Thiền định</button>
+        <button class="btn-option" data-pose="tpose">🧍 T-Pose (Rig)</button>
+      </div>
+    </div>
+
+    <!-- Magic & Orb Controls -->
+    <div class="sidebar-section">
+      <div class="section-title">✨ Hiệu ứng Quả Cầu Ma Thuật</div>
+      <div class="control-row">
+        <span>Lơ lửng quả cầu</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="orb-float-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Quang thông phát sáng</span>
+        <input type="range" id="orb-light-intensity" min="0.5" max="4.0" step="0.1" value="2.0">
+      </div>
+    </div>
+
+    <!-- Live Color Customizer -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+      
+      <div class="control-row">
+        <span>Mũ trùm (Hood)</span>
+        <input type="color" id="col-hood" value="#752986">
+      </div>
+      <div class="control-row">
+        <span>Vành gấp mũ (Lip)</span>
+        <input type="color" id="col-lip" value="#8c369e">
+      </div>
+      <div class="control-row">
+        <span>Da mặt Chibi (Skin)</span>
+        <input type="color" id="col-skin" value="#f9be9f">
+      </div>
+      <div class="control-row">
+        <span>Đá phép ngực (Gem)</span>
+        <input type="color" id="col-gem" value="#ea3eff">
+      </div>
+      <div class="control-row">
+        <span>Đai vàng eo (Belt)</span>
+        <input type="color" id="col-belt" value="#e2a42b">
+      </div>
+      <div class="control-row">
+        <span>Nếp sáng áo (Pleat)</span>
+        <input type="color" id="col-pleat" value="#9e2b9c">
+      </div>
+      <div class="control-row">
+        <span>Áo choàng ngoài (Cape)</span>
+        <input type="color" id="col-cape" value="#301036">
+      </div>
+      <div class="control-row">
+        <span>Quả cầu phép (Orb)</span>
+        <input type="color" id="col-orb" value="#c832f0">
+      </div>
+
+      <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
+        ↺ Đặt lại màu chuẩn
+      </button>
+    </div>
+
+    <!-- View & Display Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Tùy chọn hiển thị</div>
+      <div class="control-row">
+        <span>Khung lưới (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📐 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createSeerCharacter, SEER_DEFAULT_COLORS } from './seer-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x191422);
+
+    // Fog for atmospheric depth
+    scene.fog = new THREE.FogExp2(0x191422, 0.08);
+
+    // Camera setup (Character height ~1.15, centered at 0.58)
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.58, 0);
+    camera.position.set(0, 0.58, 2.3);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.copy(target);
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.minDistance = 0.8;
+    controls.maxDistance = 6.0;
+    controls.update();
+
+    // Studio Dark Fantasy Lighting
+    const ambientLight = new THREE.AmbientLight(0xdcd4e4, 0.85);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff2e4, 1.25);
+    keyLight.position.set(2.8, 4.8, 3.5);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 12;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x9888b4, 0.65);
+    fillLight.position.set(-3.5, 2.5, 2.5);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff4ea, 0.60);
+    frontLight.position.set(0, 1.2, 4.0);
+    scene.add(frontLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffb26c, 0.65);
+    rimLight.position.set(-3.2, 3.5, 1.8);
+    scene.add(rimLight);
+
+    // Low-poly pedestal / ground disc
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x221a2c,
+      roughness: 0.9,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Create Seer Character
+    const seerData = createSeerCharacter();
+    scene.add(seerData.model);
+
+    // State
+    let isFloatingOrb = true;
+    let autoRotate = false;
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      controls.autoRotate = autoRotate;
+      controls.update();
+
+      if (isFloatingOrb && seerData.update) {
+        seerData.update(elapsed);
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Camera preset switcher
+    document.querySelectorAll('[data-cam]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-cam]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+
+        if (cam === 'front') {
+          camera.position.set(0, 0.58, 2.3);
+          controls.target.set(0, 0.58, 0);
+        } else if (cam === 'perspective') {
+          camera.position.set(1.5, 0.82, 1.9);
+          controls.target.set(0, 0.58, 0);
+        } else if (cam === 'side') {
+          camera.position.set(2.3, 0.58, 0);
+          controls.target.set(0, 0.58, 0);
+        } else if (cam === 'back') {
+          camera.position.set(0, 0.58, -2.3);
+          controls.target.set(0, 0.58, 0);
+        } else if (cam === 'top') {
+          camera.position.set(0, 3.0, 0.01);
+          controls.target.set(0, 0.58, 0);
+        } else if (cam === 'close') {
+          camera.position.set(0, 0.80, 1.05);
+          controls.target.set(0, 0.80, 0);
+        }
+      });
+    });
+
+    // Pose Switcher
+    document.querySelectorAll('[data-pose]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        seerData.setPose(btn.dataset.pose);
+      });
+    });
+
+    // Color Pickers
+    const colorMap = {
+      'col-hood': 'hoodOuter',
+      'col-lip': 'hoodLip',
+      'col-skin': 'skin',
+      'col-gem': 'gem',
+      'col-belt': 'belt',
+      'col-pleat': 'robeCenter',
+      'col-cape': 'capeBack',
+      'col-orb': 'orbColor'
+    };
+
+    Object.keys(colorMap).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          const updateObj = {};
+          updateObj[prop] = e.target.value;
+          seerData.setColors(updateObj);
+        });
+      }
+    });
+
+    // Reset Colors
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      seerData.setColors(SEER_DEFAULT_COLORS);
+      document.getElementById('col-hood').value = SEER_DEFAULT_COLORS.hoodOuter;
+      document.getElementById('col-lip').value = SEER_DEFAULT_COLORS.hoodLip;
+      document.getElementById('col-skin').value = SEER_DEFAULT_COLORS.skin;
+      document.getElementById('col-gem').value = SEER_DEFAULT_COLORS.gem;
+      document.getElementById('col-belt').value = SEER_DEFAULT_COLORS.belt;
+      document.getElementById('col-pleat').value = SEER_DEFAULT_COLORS.robeCenter;
+      document.getElementById('col-cape').value = SEER_DEFAULT_COLORS.capeBack;
+      document.getElementById('col-orb').value = SEER_DEFAULT_COLORS.orbColor;
+    });
+
+    // Wireframe toggle
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      seerData.setWireframe(e.target.checked);
+    });
+
+    // Auto rotate toggle
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    // Shadows toggle
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    // Orb float toggle
+    document.getElementById('orb-float-toggle')?.addEventListener('change', (e) => {
+      isFloatingOrb = e.target.checked;
+    });
+
+    // Orb Light intensity
+    document.getElementById('orb-light-intensity')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      const orbAnchor = seerData.parts.orbAnchor;
+      if (orbAnchor) {
+        const pointLight = orbAnchor.children.find(c => c.isPointLight);
+        if (pointLight) pointLight.intensity = val;
+      }
+    });
+
+    // Export GLB
+    document.getElementById('btn-export-glb')?.addEventListener('click', () => {
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        seerData.model,
+        function (gltf) {
+          const blob = new Blob([gltf], { type: 'application/octet-stream' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'seer_character.glb';
+          link.click();
+          URL.revokeObjectURL(link.href);
+        },
+        function (error) {
+          console.error('An error happened during GLTF export:', error);
+          alert('Không thể xuất GLB: ' + error);
+        },
+        { binary: true }
+      );
+    });
+
+    // Export OBJ
+    document.getElementById('btn-export-obj')?.addEventListener('click', () => {
+      const exporter = new OBJExporter();
+      const result = exporter.parse(seerData.model);
+      const blob = new Blob([result], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'seer_character.obj';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3D Low-Poly Chibi Girl Preview</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #2d2f34;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createGirlCharacter } from './girl-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2d2f34);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view') || 'front';
+
+    // Camera targets exactly framed for girl
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 1.11, 0);
+
+    if (view === 'front') {
+      camera.position.set(0, 1.15, 4.8);
+    } else if (view === '34') {
+      camera.position.set(2.5, 1.6, 4.2);
+    } else if (view === 'side') {
+      camera.position.set(4.8, 1.15, 0);
+    } else if (view === 'back') {
+      camera.position.set(0, 1.15, -4.8);
+    } else {
+      camera.position.set(0, 1.15, 4.8);
+    }
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.06;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(target);
+    controls.update();
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.95);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.20);
+    keyLight.position.set(3.2, 4.8, 4.2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 1024;
+    keyLight.shadow.mapSize.height = 1024;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.65);
+    fillLight.position.set(-4.0, 2.5, 3.0);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff5ea, 0.50);
+    frontLight.position.set(0, 1.5, 5.0);
+    scene.add(frontLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    rimLight.position.set(0, 4.5, -4.0);
+    scene.add(rimLight);
+
+    // Character
+    const character = createGirlCharacter();
+    scene.add(character.model);
+
+    // Animate
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Export Trigger via URL
+    if (urlParams.get('export') === 'glb') {
+      setTimeout(() => {
+        const exporter = new GLTFExporter();
+        exporter.parse(
+          character.model,
+          function (gltf) {
+            fetch('/save-file?name=girl.glb', {
+              method: 'POST',
+              body: gltf
+            }).then(() => console.log('GLB exported successfully'));
+          },
+          { binary: true }
+        );
+      }, 500);
+    }
+
+    if (urlParams.get('export') === 'obj') {
+      setTimeout(() => {
+        const exporter = new OBJExporter();
+        const result = exporter.parse(character.model);
+        fetch('/save-file?name=girl.obj', {
+          method: 'POST',
+          body: result
+        }).then(() => console.log('OBJ exported successfully'));
+      }, 500);
+    }
+  </script>
+</body>
+</html>
+

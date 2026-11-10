@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô hình 3D Chibi Werewolf (Three.js Low-Poly Dark Fantasy)</title>
+  <style>
+    :root {
+      --bg-dark: #1b1922;
+      --panel-bg: rgba(26, 23, 34, 0.85);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --accent: #ff2a38;
+      --accent-hover: #ff4d5a;
+      --accent-purple: #9d8ab8;
+      --text-main: #f0f2f5;
+      --text-dim: #9ea3b5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .brand-badge h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(18, 16, 24, 0.88);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .char-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #d3202e, #88121d);
+      box-shadow: 0 2px 10px rgba(211, 32, 46, 0.4);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:hover {
+      background: rgba(45, 41, 58, 0.9);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e02432, #96131e);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #f03342, #b01a26);
+      box-shadow: 0 6px 20px rgba(224, 36, 50, 0.4);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(370px);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(255, 42, 56, 0.2);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .2s;
+      border-radius: 24px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider-toggle {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider-toggle:before {
+      transform: translateX(18px);
+    }
+
+    /* Floating View Controls bottom-center */
+    .view-bar {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 6px;
+      display: flex;
+      gap: 6px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .view-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .view-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .view-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Floating Sidebar Toggle Button */
+    .toggle-sidebar-btn {
+      position: absolute;
+      top: 24px;
+      right: 20px;
+      z-index: 11;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .toggle-sidebar-btn { display: flex; }
+      .sidebar {
+        top: 70px;
+        right: 10px;
+        width: 300px;
+      }
+      .brand-badge h1 { font-size: 14px; }
+      .view-bar { bottom: 12px; }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🐺 Chibi Werewolf 3D</h1>
+      <p>Low-Poly Dark Fantasy &bull; Procedural Three.js BufferGeometry</p>
+    </div>
+
+    <!-- Character Switcher -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn active">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-export-glb" class="btn btn-primary" title="Tải mô hình 3D chuẩn GLB">
+        📦 Tải GLB
+      </button>
+      <button id="btn-export-obj" class="btn" title="Tải file OBJ và MTL">
+        📐 Tải OBJ
+      </button>
+    </div>
+  </header>
+
+  <!-- Floating Camera Views Bar (Bottom Center) -->
+  <div class="view-bar">
+    <button class="view-btn active" data-view="front">Chính diện</button>
+    <button class="view-btn" data-view="34">Góc 3/4</button>
+    <button class="view-btn" data-view="side">Góc nghiêng</button>
+    <button class="view-btn" data-view="back">Mặt sau</button>
+    <button class="view-btn" data-view="top">Từ trên xuống</button>
+  </div>
+
+  <!-- Control Sidebar (Right) -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Poses & Actions -->
+    <div class="sidebar-section">
+      <div class="section-title">⚡ Tư thế (Pose)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="aggressive">🐾 Prowl (Rình mồi)</button>
+        <button class="btn-option" data-pose="roar">⚡ Roar (Gầm thét)</button>
+        <button class="btn-option" data-pose="swipe">⚔️ Claw Swipe</button>
+        <button class="btn-option" data-pose="t-pose">🧍 T-Pose</button>
+      </div>
+    </div>
+
+    <!-- Jaw & Snarl -->
+    <div class="sidebar-section">
+      <div class="section-title">🦷 Miệng & Nanh sói</div>
+      <div class="control-row">
+        <span>Độ mở miệng:</span>
+        <input type="range" id="mouth-slider" min="0" max="1" step="0.05" value="0.1">
+      </div>
+    </div>
+
+    <!-- Animation & Effects -->
+    <div class="sidebar-section">
+      <div class="section-title">🎬 Chuyển động & Hiệu ứng</div>
+      <div class="toggle-row">
+        <span>Tự động xoay 360°</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-rotate">
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span>Nhịp thở (Breathing)</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-breathe" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span>Mắt đỏ rực (Glow)</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-eye-glow" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span>Khung dây (Wireframe)</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-wireframe">
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="switch">
+          <input type="checkbox" id="toggle-shadows" checked>
+          <span class="slider-toggle"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Color Customization -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu nhân vật</div>
+      <div class="control-row">
+        <span>Lông chính:</span>
+        <input type="color" id="col-primary" value="#3e3b4a">
+      </div>
+      <div class="control-row">
+        <span>Bờm ngực (Ruff):</span>
+        <input type="color" id="col-chest" value="#7c7688">
+      </div>
+      <div class="control-row">
+        <span>Mắt phát sáng:</span>
+        <input type="color" id="col-eyes" value="#ff261b">
+      </div>
+      <div class="control-row">
+        <span>Móng vuốt (Claws):</span>
+        <input type="color" id="col-claws" value="#e8e5e2">
+      </div>
+    </div>
+
+    <!-- Reference Link -->
+    <div class="sidebar-section" style="margin-top: auto; padding-top: 10px; border-top: 1px solid var(--panel-border);">
+      <a href="comparison_wolf.html" target="_blank" class="btn" style="width: 100%; justify-content: center; text-decoration: none;">
+        🔍 Xem đối chiếu 1:1 Ảnh mẫu
+      </a>
+    </div>
+  </aside>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createWolfCharacter, WOLF_DEFAULT_COLORS } from './wolf-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1e1c25);
+
+    // Camera setup for Chibi Werewolf (height H = 1.0, center ~ 0.48)
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.48, 0);
+    camera.position.set(0, 0.50, 2.22);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.copy(target);
+    controls.minDistance = 1.4;
+    controls.maxDistance = 6.0;
+    controls.maxPolarAngle = Math.PI / 2 + 0.08;
+    controls.update();
+
+    // Studio Lighting matching Cinematic Dark Fantasy Forest (Moonlit Purple Rim & Crisp Key)
+    const ambientLight = new THREE.AmbientLight(0x3e3c4e, 1.25);
+    scene.add(ambientLight);
+
+    const purpleRim = new THREE.DirectionalLight(0xc084fc, 2.6);
+    purpleRim.position.set(-1.5, 2.5, -2.0);
+    scene.add(purpleRim);
+
+    const rightRim = new THREE.DirectionalLight(0x6078a6, 0.60);
+    rightRim.position.set(2.5, 2.0, -1.5);
+    scene.add(rightRim);
+
+    const frontFill = new THREE.DirectionalLight(0xe0e8f8, 1.28);
+    frontFill.position.set(0.8, 3.2, 2.5);
+    frontFill.castShadow = true;
+    frontFill.shadow.mapSize.width = 2048;
+    frontFill.shadow.mapSize.height = 2048;
+    frontFill.shadow.camera.near = 0.5;
+    frontFill.shadow.camera.far = 10;
+    frontFill.shadow.camera.left = -1.4;
+    frontFill.shadow.camera.right = 1.4;
+    frontFill.shadow.camera.top = 1.6;
+    frontFill.shadow.camera.bottom = -0.6;
+    frontFill.shadow.bias = -0.0005;
+    scene.add(frontFill);
+
+    const bottomBounce = new THREE.DirectionalLight(0x525a75, 0.40);
+    bottomBounce.position.set(0, -1.0, 0.8);
+    scene.add(bottomBounce);
+
+    // Low-poly ground pedestal disc (Bóng đổ sàn giống Seer)
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x16141e,
+      roughness: 0.92,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Character instance
+    const wolfData = createWolfCharacter();
+    scene.add(wolfData.model);
+
+    // UI Event Handlers
+    // 1. Camera Views
+    const viewButtons = document.querySelectorAll('.view-btn');
+    const viewCameras = {
+      'front': { pos: [0, 0.50, 2.22], tgt: [0, 0.48, 0] },
+      '34':    { pos: [1.50, 0.72, 1.75], tgt: [0, 0.48, 0] },
+      'side':  { pos: [2.25, 0.50, 0],    tgt: [0, 0.48, 0] },
+      'back':  { pos: [0, 0.52, -2.25],   tgt: [0, 0.48, 0] },
+      'top':   { pos: [0, 2.60, 0.01],    tgt: [0, 0.48, 0] }
+    };
+
+    viewButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        viewButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const view = btn.dataset.view;
+        const cfg = viewCameras[view];
+        if (cfg) {
+          camera.position.set(...cfg.pos);
+          controls.target.set(...cfg.tgt);
+          controls.update();
+        }
+      });
+    });
+
+    // 2. Poses
+    const poseButtons = document.querySelectorAll('[data-pose]');
+    poseButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        poseButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        wolfData.setPose(btn.dataset.pose);
+      });
+    });
+
+    // 3. Mouth open slider
+    let userBaseMouth = 0.35;
+    const mouthSlider = document.getElementById('mouth-slider');
+    mouthSlider.addEventListener('input', (e) => {
+      userBaseMouth = THREE.MathUtils.lerp(0.18, 0.60, parseFloat(e.target.value));
+      wolfData.parts.lowerJawPivot.rotation.x = userBaseMouth;
+    });
+
+    // 4. Color Pickers
+    document.getElementById('col-primary').addEventListener('input', (e) => {
+      wolfData.setColors({ primaryFur: e.target.value });
+    });
+    document.getElementById('col-chest').addEventListener('input', (e) => {
+      wolfData.setColors({ chestFur: e.target.value });
+    });
+    document.getElementById('col-eyes').addEventListener('input', (e) => {
+      wolfData.setColors({ eyes: e.target.value });
+    });
+    document.getElementById('col-claws').addEventListener('input', (e) => {
+      wolfData.setColors({ claws: e.target.value });
+    });
+
+    // 5. Toggles
+    const rotateToggle = document.getElementById('toggle-rotate');
+    const breatheToggle = document.getElementById('toggle-breathe');
+    const eyeGlowToggle = document.getElementById('toggle-eye-glow');
+    const wireframeToggle = document.getElementById('toggle-wireframe');
+    const shadowsToggle = document.getElementById('toggle-shadows');
+
+    wireframeToggle.addEventListener('change', (e) => {
+      wolfData.setWireframe(e.target.checked);
+    });
+
+    eyeGlowToggle.addEventListener('change', (e) => {
+      wolfData.setColors({ eyes: e.target.checked ? '#ff261b' : '#331114' });
+    });
+
+    shadowsToggle?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    breatheToggle.addEventListener('change', (e) => {
+      if (!e.target.checked) {
+        // Reset sạch sẽ tất cả vị trí khi tắt nhịp thở
+        if (wolfData.parts.chestGroup) wolfData.parts.chestGroup.scale.set(1, 1, 1);
+        if (wolfData.parts.chestManeGroup) {
+          wolfData.parts.chestManeGroup.scale.set(1, 1, 1);
+          wolfData.parts.chestManeGroup.rotation.x = -0.15;
+        }
+        if (wolfData.parts.headGroup) {
+          wolfData.parts.headGroup.position.set(0, 0.70, 0.22);
+          wolfData.parts.headGroup.rotation.set(-0.06, 0, 0);
+        }
+        if (wolfData.parts.muzzleGroup) {
+          wolfData.parts.muzzleGroup.scale.set(1, 1, 0.85);
+          wolfData.parts.muzzleGroup.rotation.x = 0;
+        }
+        if (wolfData.parts.browMesh) wolfData.parts.browMesh.scale.set(1.05, 0.60, 0.82);
+        if (wolfData.parts.lowerJawPivot) wolfData.parts.lowerJawPivot.rotation.x = userBaseMouth;
+        if (wolfData.parts.humpGroup) wolfData.parts.humpGroup.scale.set(1, 1, 1);
+        if (wolfData.parts.armLeftGroup) wolfData.parts.armLeftGroup.rotation.z = 0;
+        if (wolfData.parts.armRightGroup) wolfData.parts.armRightGroup.rotation.z = 0;
+        if (wolfData.parts.tailGroup) wolfData.parts.tailGroup.rotation.set(-0.65, 0, 0);
+      }
+    });
+
+    // 6. Export GLB
+    document.getElementById('btn-export-glb').addEventListener('click', () => {
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        wolfData.model,
+        (gltf) => {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'chibi_werewolf.glb';
+          link.click();
+        },
+        (err) => console.error(err),
+        { binary: true }
+      );
+    });
+
+    // 7. Export OBJ
+    document.getElementById('btn-export-obj').addEventListener('click', () => {
+      const exporter = new OBJExporter();
+      const result = exporter.parse(wolfData.model);
+      const blob = new Blob([result], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'chibi_werewolf.obj';
+      link.click();
+    });
+
+    // Render loop & animations
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Auto-rotation
+      if (rotateToggle.checked) {
+        wolfData.model.rotation.y += 0.01;
+      }
+
+      // Breathing animation (Nhịp thở sống động, chân thực cho Toàn thân, Bờm ngực, Mặt & Miệng sói)
+      if (breatheToggle.checked) {
+        // Nhịp thở chậm rãi, sâu và uy lực của dã thú (Chu kỳ ~2.8 giây/nhịp)
+        const rawSin = Math.sin(elapsedTime * 2.2);
+        // breathCycle từ 0.0 (thở hết ra) đến 1.0 (hít đầy lồng ngực)
+        const breathCycle = (rawSin + 1.0) * 0.5;
+
+        // 1. LỒNG NGỰC & BỜM BẠC PHẬP PHỒNG (Chest & Mane heaving):
+        if (wolfData.parts.chestGroup) {
+          // Thân thon gọn, phập phồng nhẹ nhàng không lấn át bờm
+          wolfData.parts.chestGroup.scale.set(
+            1.0 + breathCycle * 0.025,
+            1.0 + breathCycle * 0.020,
+            1.0 + breathCycle * 0.025
+          );
+        }
+        if (wolfData.parts.chestManeGroup) {
+          // Bờm bạc nằm trước bờm má, dao động nhịp nhàng theo lồng ngực
+          wolfData.parts.chestManeGroup.scale.set(
+            1.0 + breathCycle * 0.035,
+            1.0 + breathCycle * 0.025,
+            1.0 + breathCycle * 0.040
+          );
+          wolfData.parts.chestManeGroup.rotation.x = -0.15 + rawSin * 0.015;
+        }
+
+        // 2. KHUÔN MẶT & MÕM SÓI THỞ THEO NHỊP (Face & Muzzle Respiration):
+        if (wolfData.parts.headGroup) {
+          // Đầu sói nhấp nhô nhẹ và hơi ngửa lên đón không khí khi hít vào
+          wolfData.parts.headGroup.position.y = 0.70 + breathCycle * 0.016;
+          wolfData.parts.headGroup.rotation.x = -0.06 - breathCycle * 0.045;
+        }
+        if (wolfData.parts.muzzleGroup) {
+          // Mõm sói phập phồng nở nhẹ và hếch lên theo nhịp hít (flaring nostrils & snout)
+          wolfData.parts.muzzleGroup.scale.set(
+            1.0 + breathCycle * 0.04,
+            1.0 + breathCycle * 0.03,
+            0.85 * (1.0 + breathCycle * 0.05)
+          );
+          wolfData.parts.muzzleGroup.rotation.x = rawSin * 0.025;
+        }
+        if (wolfData.parts.browMesh) {
+          // Vòm trán và cơ mặt co giãn nhẹ theo biểu cảm thở dã thú
+          wolfData.parts.browMesh.scale.set(
+            1.05 + breathCycle * 0.03,
+            0.60 + breathCycle * 0.025,
+            0.82
+          );
+        }
+
+        // 3. MIỆNG & HÀM SÓI HÉ MỞ THỞ DỐC RÕ RỆT (Mouth & Lower Jaw Panting):
+        if (wolfData.parts.lowerJawPivot) {
+          // Hàm dưới há mở rõ rệt khi hít vào (biên độ 0.12 rad ~ 7 độ), để lộ nanh vuốt và khoang miệng đỏ thẫm
+          const jawPantingAmp = 0.12;
+          wolfData.parts.lowerJawPivot.rotation.x = userBaseMouth + breathCycle * jawPantingAmp;
+        }
+
+        // 4. VAI & GÙ LƯNG NHẤP NHÔ (Shoulders & Hump):
+        if (wolfData.parts.humpGroup) {
+          wolfData.parts.humpGroup.scale.set(
+            1.0 + breathCycle * 0.025,
+            1.0 + breathCycle * 0.035,
+            1.0 + breathCycle * 0.025
+          );
+        }
+        if (wolfData.parts.armLeftGroup && wolfData.parts.armRightGroup) {
+          // Cánh tay hơi nhấc nhẹ theo nhịp mở rộng của lồng ngực
+          wolfData.parts.armLeftGroup.rotation.z = -breathCycle * 0.025;
+          wolfData.parts.armRightGroup.rotation.z = breathCycle * 0.025;
+        }
+
+        // 5. ĐUÔI BÓ CHỔI NGOÁY ĐUNG ĐƯA (Broomstick Tail Swaying):
+        if (wolfData.parts.tailGroup) {
+          wolfData.parts.tailGroup.rotation.y = Math.sin(elapsedTime * 1.8) * 0.14;
+          wolfData.parts.tailGroup.rotation.z = Math.cos(elapsedTime * 1.8) * 0.06;
+          wolfData.parts.tailGroup.rotation.x = -0.65 + rawSin * 0.030;
+        }
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
