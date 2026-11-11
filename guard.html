@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô hình 3D Guard — Hiệp Sĩ Bảo Vệ (Three.js Low-Poly Stylized Knight)</title>
+  <style>
+    :root {
+      --bg-dark: #161720;
+      --panel-bg: rgba(24, 25, 36, 0.88);
+      --panel-border: rgba(255, 159, 67, 0.22);
+      --accent: #ff9f43;
+      --accent-hover: #ffaf60;
+      --accent-glow: rgba(255, 159, 67, 0.45);
+      --accent-steel: #7d8ba1;
+      --text-main: #f3effa;
+      --text-dim: #a69bb8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-badge h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-badge p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(18, 14, 26, 0.90);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .char-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #e67e22, #b35400);
+      box-shadow: 0 2px 14px rgba(230, 126, 34, 0.5);
+      border: 1px solid rgba(255, 159, 67, 0.4);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: rgba(48, 38, 68, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e67e22, #b35400);
+      border-color: rgba(255, 159, 67, 0.4);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #f39c12, #d35400);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(370px);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(255, 159, 67, 0.22);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Bottom Info Badge */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-pill b {
+      color: #fff;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 290px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🛡️ Guard (Bảo Vệ / Hiệp Sĩ) <span>⚔️</span></h1>
+      <p>3D Low-Poly Stylized Fantasy Knight • Three.js</p>
+    </div>
+
+    <!-- Character Switcher Bar -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+      <a href="guard.html" class="char-btn active">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
+    </div>
+
+    <!-- Quick Export Actions -->
+    <div class="top-actions">
+      <a href="pages/comparison_guard.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
+      <button id="btn-export-glb" class="btn btn-primary" title="Tải mô hình chuẩn 3D GLB">📦 Tải .GLB</button>
+      <button id="btn-export-obj" class="btn" title="Tải file OBJ Wavefront">💾 Tải .OBJ</button>
+    </div>
+  </header>
+
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
+      </div>
+    </div>
+
+    <!-- Pose Section -->
+    <div class="sidebar-section">
+      <div class="section-title">⚡ Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="guard">🛡️ Cảnh giác (Guard)</button>
+        <button class="btn-option" data-pose="defend">⚔️ Chắn khiên (Defend)</button>
+        <button class="btn-option" data-pose="salute">🎖️ Chào hiệp sĩ</button>
+        <button class="btn-option" data-pose="t-pose">🧍 T-Pose (Rig)</button>
+      </div>
+    </div>
+
+    <!-- Knight Effects & Features -->
+    <div class="sidebar-section">
+      <div class="section-title">✨ Hiệu ứng Hiệp Sĩ</div>
+      <div class="control-row">
+        <span>Tia lửa bay lơ lửng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="ember-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Nhịp thở nhẹ nhàng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="breathe-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Ánh sáng khiên hộ vệ</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shield-glow-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Cường độ ánh sáng khiên</span>
+        <input type="range" id="shield-glow-intensity" min="0" max="100" value="100" aria-label="Cường độ ánh sáng khiên">
+        <span id="shield-glow-val" style="min-width:36px; text-align:right; color:var(--text-dim); font-size:12px;">100%</span>
+      </div>
+    </div>
+
+    <!-- Live Color Customizer -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+      
+      <div class="control-row">
+        <span>Giáp sắt chính (Steel)</span>
+        <input type="color" id="col-steel" value="#898793">
+      </div>
+      <div class="control-row">
+        <span>Sống mũ & Viền (Light Steel)</span>
+        <input type="color" id="col-steel-light" value="#bdbbc4">
+      </div>
+      <div class="control-row">
+        <span>Gáy & Khe giáp (Dark Steel)</span>
+        <input type="color" id="col-steel-dark" value="#615f6b">
+      </div>
+      <div class="control-row">
+        <span>Làn da Chibi (Skin)</span>
+        <input type="color" id="col-skin" value="#f3b48b">
+      </div>
+      <div class="control-row">
+        <span>Khóa đai vàng (Buckle)</span>
+        <input type="color" id="col-buckle" value="#b8894f">
+      </div>
+      <div class="control-row">
+        <span>Ván gỗ khiên (Wood Plank)</span>
+        <input type="color" id="col-wood" value="#875238">
+      </div>
+      <div class="control-row">
+        <span>Giày ủng da (Boots)</span>
+        <input type="color" id="col-boots" value="#6b412c">
+      </div>
+
+      <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
+        ↩ Đặt lại màu chuẩn
+      </button>
+    </div>
+
+    <!-- View & Display Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Tùy chọn hiển thị</div>
+      <div class="control-row">
+        <span>Khung lưới (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📌 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createGuardCharacter, GUARD_DEFAULT_COLORS } from './js/guard-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x181824);
+    scene.fog = new THREE.FogExp2(0x181824, 0.06);
+
+    // Camera setup for Chibi Guard (Total height ~ 1.00, center at 0.51)
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.51, 0);
+    camera.position.set(0, 0.54, 2.55);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.copy(target);
+    controls.minDistance = 0.8;
+    controls.maxDistance = 6.0;
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.update();
+
+    // Soft Neutral Studio Lighting (Warm-White Top-Left Key + Cool Right Fill, NO Orange Floor Light)
+    const ambientLight = new THREE.AmbientLight(0xd8dde8, 0.45);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xeef2fa, 0x262530, 0.55);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff6ec, 1.35);
+    keyLight.position.set(-2.5, 4.0, 2.8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xaab8d2, 0.78);
+    fillLight.position.set(3.0, 2.2, 2.2);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xf6f6fa, 0.48);
+    frontLight.position.set(0, 1.1, 3.5);
+    scene.add(frontLight);
+
+    const backRim = new THREE.DirectionalLight(0xd4def0, 0.50);
+    backRim.position.set(-1.2, 2.6, -2.8);
+    scene.add(backRim);
+
+    // Floor Pedestal Disc
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x1d1e2a,
+      roughness: 0.90,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Character Instance
+    const guardData = createGuardCharacter();
+    scene.add(guardData.model);
+
+    // State
+    let autoRotate = false;
+    let isBreathing = true;
+
+    // Camera Presets
+    const cameraPresets = {
+      'front':       { pos: [0, 0.54, 2.55],    tgt: [0, 0.51, 0] },
+      'perspective': { pos: [1.65, 0.76, 2.05], tgt: [0, 0.51, 0] },
+      'side':        { pos: [2.55, 0.54, 0],    tgt: [0, 0.51, 0] },
+      'back':        { pos: [0, 0.54, -2.55],   tgt: [0, 0.51, 0] },
+      'top':         { pos: [0, 2.90, 0.01],    tgt: [0, 0.51, 0] },
+      'close':       { pos: [0, 0.70, 1.18],    tgt: [0, 0.68, 0] }
+    };
+
+    // Camera preset switcher
+    document.querySelectorAll('[data-cam]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cam]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+        const cfg = cameraPresets[cam];
+        if (cfg) {
+          camera.position.set(...cfg.pos);
+          controls.target.set(...cfg.tgt);
+          controls.update();
+        }
+      });
+    });
+
+    // Pose Switcher
+    document.querySelectorAll('[data-pose]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        guardData.setPose(btn.dataset.pose);
+      });
+    });
+
+    // Color Pickers
+    const colorMap = {
+      'col-steel':       'steel',
+      'col-steel-light': 'steelLight',
+      'col-steel-dark':  'steelDark',
+      'col-skin':        'skin',
+      'col-buckle':      'buckle',
+      'col-wood':        'woodPlank',
+      'col-boots':       'boots'
+    };
+
+    Object.keys(colorMap).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          const updateObj = {};
+          updateObj[prop] = e.target.value;
+          guardData.setColors(updateObj);
+        });
+      }
+    });
+
+    // Reset Colors
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      guardData.setColors(GUARD_DEFAULT_COLORS);
+      document.getElementById('col-steel').value = GUARD_DEFAULT_COLORS.steel;
+      document.getElementById('col-steel-light').value = GUARD_DEFAULT_COLORS.steelLight;
+      document.getElementById('col-steel-dark').value = GUARD_DEFAULT_COLORS.steelDark;
+      document.getElementById('col-skin').value = GUARD_DEFAULT_COLORS.skin;
+      document.getElementById('col-buckle').value = GUARD_DEFAULT_COLORS.buckle;
+      document.getElementById('col-wood').value = GUARD_DEFAULT_COLORS.woodPlank;
+      document.getElementById('col-boots').value = GUARD_DEFAULT_COLORS.boots;
+    });
+
+    // Toggles
+    document.getElementById('ember-toggle')?.addEventListener('change', (e) => {
+      if (guardData.parts.emberGroup) {
+        guardData.parts.emberGroup.visible = e.target.checked;
+      }
+    });
+
+    document.getElementById('breathe-toggle')?.addEventListener('change', (e) => {
+      isBreathing = e.target.checked;
+    });
+
+    document.getElementById('shield-glow-toggle')?.addEventListener('change', (e) => {
+      guardData.setShieldGlow(e.target.checked);
+    });
+
+    document.getElementById('shield-glow-intensity')?.addEventListener('input', (e) => {
+      const pct = Number(e.target.value);
+      guardData.setShieldGlowIntensity(pct / 100);
+      const valEl = document.getElementById('shield-glow-val');
+      if (valEl) valEl.textContent = `${pct}%`;
+    });
+
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      guardData.setWireframe(e.target.checked);
+    });
+
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    // Export GLB
+    document.getElementById('btn-export-glb')?.addEventListener('click', () => {
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        guardData.model,
+        function (gltf) {
+          const blob = new Blob([gltf], { type: 'application/octet-stream' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'guard_knight.glb';
+          link.click();
+          URL.revokeObjectURL(link.href);
+        },
+        function (error) {
+          console.error('Lỗi khi xuất GLB:', error);
+          alert('Không thể xuất GLB: ' + error);
+        },
+        { binary: true }
+      );
+    });
+
+    // Export OBJ
+    document.getElementById('btn-export-obj')?.addEventListener('click', () => {
+      const exporter = new OBJExporter();
+      const result = exporter.parse(guardData.model);
+      const blob = new Blob([result], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'guard_knight.obj';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      controls.autoRotate = autoRotate;
+      controls.update();
+
+      if (guardData.update) {
+        guardData.update(elapsed, { breathe: isBreathing });
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

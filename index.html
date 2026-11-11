@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mô hình 3D Chibi Girl (Three.js Low-Poly)</title>
+  <title>Mô hình 3D Chibi Girl — Cô Gái Chibi (Three.js Low-Poly Stylized)</title>
   <style>
     :root {
-      --bg-dark: #1e2025;
-      --panel-bg: rgba(28, 30, 38, 0.82);
-      --panel-border: rgba(255, 255, 255, 0.1);
-      --accent: #ff7e9e;
-      --accent-hover: #ff9cb5;
-      --text-main: #f0f2f5;
-      --text-dim: #9aa0b0;
+      --bg-dark: #191a22;
+      --panel-bg: rgba(24, 25, 35, 0.88);
+      --panel-border: rgba(255, 101, 132, 0.22);
+      --accent: #ff6584;
+      --accent-hover: #ff859f;
+      --accent-glow: rgba(255, 101, 132, 0.45);
+      --accent-pink: #d64567;
+      --text-main: #f3effa;
+      --text-dim: #a69bb8;
     }
 
     * {
@@ -56,11 +58,11 @@
     .brand-badge {
       pointer-events: auto;
       background: var(--panel-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       border: 1px solid var(--panel-border);
       padding: 10px 18px;
       border-radius: 14px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     }
 
     .brand-badge h1 {
@@ -70,6 +72,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      text-shadow: 0 0 12px var(--accent-glow);
     }
 
     .brand-badge p {
@@ -81,12 +84,12 @@
     .char-switch {
       pointer-events: auto;
       display: flex;
-      background: rgba(18, 20, 26, 0.88);
+      background: rgba(18, 14, 26, 0.90);
       border: 1px solid var(--panel-border);
       border-radius: 12px;
       padding: 4px;
       gap: 4px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
     .char-btn {
@@ -110,7 +113,8 @@
     .char-btn.active {
       color: #fff;
       background: linear-gradient(135deg, #e8597b, #c4385a);
-      box-shadow: 0 2px 10px rgba(232, 89, 123, 0.4);
+      box-shadow: 0 2px 14px rgba(232, 89, 123, 0.5);
+      border: 1px solid rgba(255, 101, 132, 0.4);
     }
 
     .top-actions {
@@ -133,24 +137,25 @@
       align-items: center;
       gap: 7px;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      text-decoration: none;
     }
 
     .btn:hover {
-      background: rgba(45, 49, 62, 0.9);
-      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(48, 38, 68, 0.95);
+      border-color: var(--accent);
       transform: translateY(-1px);
     }
 
     .btn-primary {
       background: linear-gradient(135deg, #e8597b, #c4385a);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 101, 132, 0.4);
       color: #fff;
     }
 
     .btn-primary:hover {
       background: linear-gradient(135deg, #f56b8c, #d64567);
-      box-shadow: 0 6px 20px rgba(232, 89, 123, 0.4);
+      box-shadow: 0 6px 20px var(--accent-glow);
     }
 
     /* Right Control Sidebar */
@@ -159,7 +164,7 @@
       top: 80px;
       right: 20px;
       bottom: 24px;
-      width: 320px;
+      width: 330px;
       z-index: 10;
       background: var(--panel-bg);
       backdrop-filter: blur(16px);
@@ -167,7 +172,7 @@
       border-radius: 18px;
       padding: 20px;
       overflow-y: auto;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -175,7 +180,7 @@
     }
 
     .sidebar.collapsed {
-      transform: translateX(360px);
+      transform: translateX(370px);
     }
 
     .sidebar-section {
@@ -195,112 +200,153 @@
       gap: 6px;
     }
 
-    .button-grid {
+    .grid-buttons {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
     }
 
-    .btn-small {
-      padding: 7px 10px;
-      font-size: 12px;
-      border-radius: 8px;
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #ddd;
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
-      text-align: center;
       transition: all 0.15s ease;
+      text-align: center;
     }
 
-    .btn-small:hover {
-      background: rgba(255, 255, 255, 0.12);
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
       color: #fff;
     }
 
-    .btn-small.active {
-      background: var(--accent);
-      color: #fff;
+    .btn-option.active {
+      background: rgba(255, 101, 132, 0.22);
       border-color: var(--accent);
+      color: #fff;
       font-weight: 600;
     }
 
-    .color-row {
+    .control-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255, 255, 255, 0.03);
-      padding: 8px 12px;
-      border-radius: 8px;
       font-size: 13px;
+      color: var(--text-main);
     }
 
-    .color-row input[type="color"] {
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
       -webkit-appearance: none;
       border: none;
       width: 28px;
       height: 28px;
-      border-radius: 50%;
+      border-radius: 6px;
       cursor: pointer;
       background: transparent;
     }
 
-    .color-row input[type="color"]::-webkit-color-swatch-wrapper {
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
       padding: 0;
     }
 
-    .color-row input[type="color"]::-webkit-color-swatch {
-      border: 2px solid rgba(255, 255, 255, 0.3);
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
       border-radius: 50%;
     }
 
-    /* Bottom Quick Toolbar */
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Bottom Info Badge */
     .bottom-bar {
       position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 20px;
+      left: 20px;
       z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
       background: var(--panel-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--panel-border);
-      padding: 6px 12px;
-      border-radius: 30px;
-      display: flex;
-      gap: 6px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    .pill-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-dim);
       padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      border-radius: 20px;
-      cursor: pointer;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
       display: flex;
       align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
+      gap: 8px;
     }
 
-    .pill-btn:hover {
+    .info-pill b {
       color: #fff;
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .pill-btn.active {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.18);
     }
 
     /* Picture-in-Picture Reference Window */
     #reference-modal {
       position: absolute;
-      bottom: 90px;
-      left: 24px;
+      bottom: 70px;
+      left: 20px;
       z-index: 20;
       background: var(--panel-bg);
       backdrop-filter: blur(16px);
@@ -351,14 +397,12 @@
     }
 
     /* Responsive */
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .sidebar {
-        width: calc(100vw - 40px);
-        max-height: 50vh;
-        top: auto;
+        width: 290px;
       }
       #reference-modal {
-        width: 160px;
+        width: 170px;
         bottom: 80px;
       }
     }
@@ -374,371 +418,439 @@
   </script>
 </head>
 <body>
+  <!-- 3D Canvas -->
   <div id="canvas-container"></div>
 
   <!-- Header -->
   <header>
     <div class="brand-badge">
-      <h1>🌸 Chibi Girl 3D Model</h1>
-      <p>Three.js Low-Poly Recreation từ <code>girl.png</code></p>
+      <h1>🌸 Chibi Girl (Cô Gái Chibi) <span>✨</span></h1>
+      <p>3D Low-Poly Stylized Recreation • Three.js</p>
     </div>
 
-    <!-- Character Switcher -->
+    <!-- Character Switcher Bar -->
     <div class="char-switch">
       <a href="index.html" class="char-btn active">🌸 Chibi Girl</a>
       <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
       <a href="seer.html" class="char-btn">🔮 Seer</a>
+      <a href="guard.html" class="char-btn">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
     </div>
 
+    <!-- Quick Export Actions -->
     <div class="top-actions">
-      <button id="btn-toggle-ref" class="btn">🖼️ Ảnh gốc mẫu</button>
-      <button id="btn-export-glb" class="btn btn-primary">💾 Tải file .GLB</button>
-      <button id="btn-export-obj" class="btn">📦 Tải .OBJ</button>
-      <button id="btn-screenshot" class="btn">📸 Chụp ảnh</button>
-      <button id="btn-toggle-sidebar" class="btn">⚙️ Bảng điều khiển</button>
+      <a href="pages/comparison.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
+      <button id="btn-toggle-ref" class="btn" title="Bật/Tắt ảnh mẫu thu nhỏ">🖼️ Ảnh mẫu gốc</button>
+      <button id="btn-export-glb" class="btn btn-primary" title="Tải mô hình chuẩn 3D GLB">📦 Tải .GLB</button>
+      <button id="btn-export-obj" class="btn" title="Tải file OBJ Wavefront">💾 Tải .OBJ</button>
     </div>
   </header>
 
-  <!-- Side Control Drawer -->
-  <aside id="sidebar" class="sidebar">
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
     <!-- Camera Section -->
     <div class="sidebar-section">
-      <div class="section-title">📷 Góc nhìn (Camera Views)</div>
-      <div class="button-grid">
-        <button class="btn-small active" onclick="setCameraView('front')">Mặt trước</button>
-        <button class="btn-small" onclick="setCameraView('perspective')">Góc 3/4</button>
-        <button class="btn-small" onclick="setCameraView('side')">Nhìn nghiêng</button>
-        <button class="btn-small" onclick="setCameraView('back')">Phía sau</button>
-        <button class="btn-small" onclick="setCameraView('top')">Từ trên xuống</button>
-        <button class="btn-small" id="btn-auto-rotate" onclick="toggleAutoRotate()">Tự xoay: Tắt</button>
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
       </div>
     </div>
 
-    <!-- Poses & Animations -->
+    <!-- Pose Section -->
     <div class="sidebar-section">
-      <div class="section-title">💃 Tư thế & Chuyển động</div>
-      <div class="button-grid">
-        <button class="btn-small active" id="btn-pose-t" onclick="setPose('t-pose')">🧍 T-Pose (Gốc)</button>
-        <button class="btn-small" id="btn-pose-a" onclick="setPose('a-pose')">🚶 Thả lỏng</button>
-        <button class="btn-small" id="btn-anim-idle" onclick="toggleAnimation('idle')">🫁 Thở nhẹ: Bật</button>
-        <button class="btn-small" id="btn-anim-wave" onclick="toggleAnimation('wave')">👋 Vẫy tay</button>
+      <div class="section-title">💃 Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="t-pose">🧍 T-Pose (Gốc)</button>
+        <button class="btn-option" data-pose="a-pose">🚶 Thả lỏng (A-Pose)</button>
       </div>
     </div>
 
-    <!-- Lighting & Shading -->
+    <!-- Animations & Gestures -->
     <div class="sidebar-section">
-      <div class="section-title">💡 Hiển thị & Ánh sáng</div>
-      <div class="button-grid">
-        <button class="btn-small" id="btn-wireframe" onclick="toggleWireframe()">Khung dây: Tắt</button>
-        <button class="btn-small active" id="btn-flatshading" onclick="toggleFlatShading()">Bóng phẳng: Bật</button>
+      <div class="section-title">✨ Cử chỉ & Hoạt ảnh Chibi</div>
+      <div class="control-row">
+        <span>Nhịp thở nhẹ nhàng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-breathe" checked>
+          <span class="slider"></span>
+        </label>
       </div>
-      <div class="button-grid" style="margin-top: 6px;">
-        <button class="btn-small active" onclick="setLighting('studio')">Studio</button>
-        <button class="btn-small" onclick="setLighting('dramatic')">Kịch tính</button>
-        <button class="btn-small" onclick="setLighting('soft')">Mềm mại</button>
-        <button class="btn-small" onclick="setLighting('bright')">Tươi sáng</button>
+      <div class="control-row">
+        <span>Vẫy tay chào</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-wave">
+          <span class="slider"></span>
+        </label>
       </div>
     </div>
 
-    <!-- Color Customization -->
+    <!-- Live Color Customizer -->
     <div class="sidebar-section">
-      <div class="section-title">🎨 Tùy chỉnh màu sắc</div>
-      <div class="color-row">
-        <span>Tóc (Hair)</span>
-        <input type="color" id="picker-hair" value="#2d303d">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+      
+      <div class="control-row">
+        <span>Mái tóc (Hair)</span>
+        <input type="color" id="picker-hair" value="#363748">
       </div>
-      <div class="color-row">
-        <span>Da (Skin)</span>
-        <input type="color" id="picker-skin" value="#f7c7b2">
+      <div class="control-row">
+        <span>Làn da (Skin)</span>
+        <input type="color" id="picker-skin" value="#f8c8b4">
       </div>
-      <div class="color-row">
-        <span>Áo (Shirt)</span>
-        <input type="color" id="picker-shirt" value="#525866">
+      <div class="control-row">
+        <span>Áo sơ mi (Shirt)</span>
+        <input type="color" id="picker-shirt" value="#6a7080">
       </div>
-      <div class="color-row">
-        <span>Quần (Pants)</span>
-        <input type="color" id="picker-pants" value="#4a505d">
+      <div class="control-row">
+        <span>Quần dài (Pants)</span>
+        <input type="color" id="picker-pants" value="#545866">
       </div>
-      <div class="color-row">
+      <div class="control-row">
+        <span>Lông mày (Eyebrows)</span>
+        <input type="color" id="picker-eyebrows" value="#2b2936">
+      </div>
+      <div class="control-row">
         <span>Màu nền (Background)</span>
-        <input type="color" id="picker-bg" value="#2d2f34">
+        <input type="color" id="picker-bg" value="#191a22">
       </div>
-      <button class="btn-small" onclick="resetDefaultColors()" style="margin-top: 6px;">↺ Khôi phục màu gốc</button>
+
+      <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
+        ↩ Đặt lại màu chuẩn
+      </button>
     </div>
 
-    <!-- Export Section -->
+    <!-- Lighting Presets -->
     <div class="sidebar-section">
-      <div class="section-title">📦 Xuất dữ liệu 3D</div>
-      <button class="btn btn-primary" onclick="exportGLB()" style="width: 100%; justify-content: center;">
-        💾 Tải .GLB (glTF Binary)
-      </button>
-      <button class="btn" onclick="exportOBJ()" style="width: 100%; justify-content: center;">
-        📦 Tải .OBJ (Wavefront)
-      </button>
+      <div class="section-title">💡 Ánh sáng Studio</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-light="studio">Studio</button>
+        <button class="btn-option" data-light="dramatic">Kịch tính</button>
+        <button class="btn-option" data-light="soft">Mềm mại</button>
+        <button class="btn-option" data-light="bright">Tươi sáng</button>
+      </div>
     </div>
-  </aside>
 
-  <!-- Bottom Quick Camera Pills -->
-  <div class="bottom-bar">
-    <button class="pill-btn active" onclick="setCameraView('front')">📷 Trước</button>
-    <button class="pill-btn" onclick="setCameraView('perspective')">📐 3/4</button>
-    <button class="pill-btn" onclick="setCameraView('side')">👤 Nghiêng</button>
-    <button class="pill-btn" onclick="setCameraView('back')">🔙 Sau</button>
-    <button class="pill-btn" id="pill-rotate" onclick="toggleAutoRotate()">🔄 Xoay</button>
+    <!-- View & Display Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Tùy chọn hiển thị</div>
+      <div class="control-row">
+        <span>Khung lưới (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
   </div>
 
-  <!-- Reference Picture-in-Picture -->
-  <div id="reference-modal">
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📌 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Reference Picture-in-Picture Modal -->
+  <div id="reference-modal" class="hidden">
     <div class="ref-header">
       <span>Ảnh mẫu gốc (girl.png)</span>
       <button class="ref-close" id="btn-close-ref">✕</button>
     </div>
-    <img src="girl.png" alt="Ảnh mẫu gốc girl.png">
+    <img src="assets/references/girl.png" alt="Ảnh mẫu gốc girl.png">
   </div>
 
-  <!-- App Script -->
+  <!-- Application Logic -->
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/GLTFExporter.js';
     import { OBJExporter } from 'three/addons/OBJExporter.js';
-    import { createGirlCharacter, DEFAULT_COLORS } from './girl-model.js';
+    import { createGirlCharacter, DEFAULT_COLORS } from './js/girl-model.js';
 
     const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     // 1. Scene Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x2d2f34);
+    scene.background = new THREE.Color(0x191a22);
+    scene.fog = new THREE.FogExp2(0x191a22, 0.04);
 
-    // 2. Camera Setup
-    const camera = new THREE.PerspectiveCamera(32, window.innerWidth / window.innerHeight, 0.1, 100);
+    // 2. Camera Setup (Model centered around X = -0.40, Y = 1.11, Z = 0)
     const cameraTargets = {
-      front: { pos: new THREE.Vector3(-0.40, 1.15, 5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
-      perspective: { pos: new THREE.Vector3(2.5, 1.6, 4.5), target: new THREE.Vector3(-0.40, 1.11, 0) },
-      side: { pos: new THREE.Vector3(4.8, 1.15, 0), target: new THREE.Vector3(-0.40, 1.11, 0) },
-      back: { pos: new THREE.Vector3(-0.40, 1.15, -5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
-      top: { pos: new THREE.Vector3(-0.40, 5.8, 0.1), target: new THREE.Vector3(-0.40, 1.11, 0) }
+      'front':       { pos: new THREE.Vector3(-0.40, 1.15, 5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'perspective': { pos: new THREE.Vector3(2.5, 1.6, 4.5),    target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'side':        { pos: new THREE.Vector3(4.8, 1.15, 0),     target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'back':        { pos: new THREE.Vector3(-0.40, 1.15, -5.2),target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'top':         { pos: new THREE.Vector3(-0.40, 5.8, 0.1),  target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'close':       { pos: new THREE.Vector3(-0.40, 1.65, 2.4), target: new THREE.Vector3(-0.40, 1.55, 0) }
     };
+
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
     camera.position.copy(cameraTargets.front.pos);
 
     // 3. Renderer Setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.06;
+    renderer.toneMappingExposure = 1.08;
     container.appendChild(renderer.domElement);
 
     // 4. OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.copy(cameraTargets.front.target);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.maxDistance = 18;
-    controls.minDistance = 2;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 1.8;
+    controls.maxDistance = 18.0;
+    controls.maxPolarAngle = Math.PI * 0.52;
     controls.update();
 
     // 5. Lighting Setup
     const ambientLight = new THREE.AmbientLight(0xffeedd, 0.95);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.20);
+    const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.25);
     keyLight.position.set(3.2, 4.8, 4.2);
     keyLight.castShadow = true;
-    keyLight.shadow.mapSize.width = 1024;
-    keyLight.shadow.mapSize.height = 1024;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
 
     const fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.65);
     fillLight.position.set(-4.0, 2.5, 3.0);
     scene.add(fillLight);
 
-    const frontLight = new THREE.DirectionalLight(0xfff5ea, 0.50);
+    const frontLight = new THREE.DirectionalLight(0xfff5ea, 0.55);
     frontLight.position.set(0, 1.5, 5.0);
     scene.add(frontLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    const rimLight = new THREE.DirectionalLight(0xffb288, 0.45);
     rimLight.position.set(0, 4.5, -4.0);
     scene.add(rimLight);
 
+    // Low-poly ground pedestal disc (Centered on character X = -0.40)
+    const floorGeo = new THREE.CylinderGeometry(2.0, 2.1, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x161720,
+      roughness: 0.92,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.set(-0.40, -0.03, 0);
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
     // 6. Character Instance
-    let character = createGirlCharacter();
+    const character = createGirlCharacter();
     scene.add(character.model);
     const initialHeadY = character.parts.headGroup.position.y;
 
-    // Animation & Posing State
+    // State
     let currentPose = 't-pose';
     let isIdleBreathing = true;
     let isWaving = false;
-    let clock = new THREE.Clock();
+    let autoRotate = false;
 
-    // Posing Logic
-    window.setPose = function(poseName) {
-      currentPose = poseName;
-      document.querySelectorAll('#btn-pose-t, #btn-pose-a').forEach(b => b.classList.remove('active'));
+    // Camera preset switcher
+    document.querySelectorAll('[data-cam]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cam]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+        const cfg = cameraTargets[cam];
+        if (cfg) {
+          // Smooth transition
+          const startPos = camera.position.clone();
+          const startTarget = controls.target.clone();
+          const duration = 500;
+          const startTime = performance.now();
 
-      if (poseName === 't-pose') {
-        document.getElementById('btn-pose-t').classList.add('active');
-        character.parts.leftArmGroup.rotation.z = 0.16;
-        character.parts.rightArmGroup.rotation.z = -0.16;
-        character.parts.leftArmGroup.rotation.x = 0;
-        character.parts.rightArmGroup.rotation.x = 0;
-      } else if (poseName === 'a-pose') {
-        document.getElementById('btn-pose-a').classList.add('active');
-        character.parts.leftArmGroup.rotation.z = 0.75;
-        character.parts.rightArmGroup.rotation.z = -0.75;
-        character.parts.leftArmGroup.rotation.x = 0.1;
-        character.parts.rightArmGroup.rotation.x = 0.1;
-      }
-    };
-
-    window.toggleAnimation = function(anim) {
-      if (anim === 'idle') {
-        isIdleBreathing = !isIdleBreathing;
-        document.getElementById('btn-anim-idle').innerText = `🫁 Thở nhẹ: ${isIdleBreathing ? 'Bật' : 'Tắt'}`;
-        document.getElementById('btn-anim-idle').classList.toggle('active', isIdleBreathing);
-      } else if (anim === 'wave') {
-        isWaving = !isWaving;
-        document.getElementById('btn-anim-wave').classList.toggle('active', isWaving);
-      }
-    };
-
-    // Camera Views
-    window.setCameraView = function(viewName) {
-      const cfg = cameraTargets[viewName];
-      if (!cfg) return;
-
-      // Animate camera smoothly
-      const startPos = camera.position.clone();
-      const startTarget = controls.target.clone();
-      const duration = 600;
-      const startTime = performance.now();
-
-      function updateCam(t) {
-        const elapsed = t - startTime;
-        const p = Math.min(1, elapsed / duration);
-        // EaseOutCubic
-        const ease = 1 - Math.pow(1 - p, 3);
-        camera.position.lerpVectors(startPos, cfg.pos, ease);
-        controls.target.lerpVectors(startTarget, cfg.target, ease);
-        controls.update();
-        if (p < 1) requestAnimationFrame(updateCam);
-      }
-      requestAnimationFrame(updateCam);
-
-      // Update active pills
-      document.querySelectorAll('.bottom-bar .pill-btn, .sidebar .btn-small').forEach(btn => {
-        if (btn.innerText.includes(viewName) || (viewName === 'front' && btn.innerText.includes('Trước'))) {
-          btn.classList.add('active');
+          function updateCam(t) {
+            const elapsed = t - startTime;
+            const p = Math.min(1, elapsed / duration);
+            const ease = 1 - Math.pow(1 - p, 3);
+            camera.position.lerpVectors(startPos, cfg.pos, ease);
+            controls.target.lerpVectors(startTarget, cfg.target, ease);
+            controls.update();
+            if (p < 1) requestAnimationFrame(updateCam);
+          }
+          requestAnimationFrame(updateCam);
         }
       });
-    };
+    });
 
-    // Auto Rotate
-    window.toggleAutoRotate = function() {
-      controls.autoRotate = !controls.autoRotate;
-      controls.autoRotateSpeed = 2.5;
-      const state = controls.autoRotate ? 'Bật' : 'Tắt';
-      document.getElementById('btn-auto-rotate').innerText = `Tự xoay: ${state}`;
-      document.getElementById('btn-auto-rotate').classList.toggle('active', controls.autoRotate);
-      document.getElementById('pill-rotate').classList.toggle('active', controls.autoRotate);
-    };
+    // Pose Switcher
+    document.querySelectorAll('[data-pose]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const poseName = btn.dataset.pose;
+        currentPose = poseName;
 
-    // Wireframe Toggle
-    let isWireframe = false;
-    window.toggleWireframe = function() {
-      isWireframe = !isWireframe;
-      character.setWireframe(isWireframe);
-      document.getElementById('btn-wireframe').innerText = `Khung dây: ${isWireframe ? 'Bật' : 'Tắt'}`;
-      document.getElementById('btn-wireframe').classList.toggle('active', isWireframe);
-    };
+        if (poseName === 't-pose') {
+          character.parts.leftArmGroup.rotation.z = 0.16;
+          character.parts.rightArmGroup.rotation.z = -0.16;
+          character.parts.leftArmGroup.rotation.x = 0;
+          character.parts.rightArmGroup.rotation.x = 0;
+        } else if (poseName === 'a-pose') {
+          character.parts.leftArmGroup.rotation.z = 0.75;
+          character.parts.rightArmGroup.rotation.z = -0.75;
+          character.parts.leftArmGroup.rotation.x = 0.1;
+          character.parts.rightArmGroup.rotation.x = 0.1;
+        }
+      });
+    });
 
-    // Flat Shading Toggle
-    let isFlatShading = true;
-    window.toggleFlatShading = function() {
-      isFlatShading = !isFlatShading;
-      for (const key in character.materials) {
-        character.materials[key].flatShading = isFlatShading;
-        character.materials[key].needsUpdate = true;
+    // Gesture Toggles
+    document.getElementById('toggle-breathe')?.addEventListener('change', (e) => {
+      isIdleBreathing = e.target.checked;
+      if (!isIdleBreathing) {
+        character.parts.headGroup.position.y = initialHeadY;
+        character.parts.headGroup.rotation.x = 0;
       }
-      document.getElementById('btn-flatshading').innerText = `Bóng phẳng: ${isFlatShading ? 'Bật' : 'Tắt'}`;
-      document.getElementById('btn-flatshading').classList.toggle('active', isFlatShading);
-    };
+    });
 
-    // Lighting Presets
-    window.setLighting = function(preset) {
-      if (preset === 'studio') {
-        ambientLight.intensity = 0.90;
-        keyLight.intensity = 1.35;
-        keyLight.color.set(0xfff7ee);
-        fillLight.intensity = 0.65;
-        rimLight.intensity = 0.45;
-      } else if (preset === 'dramatic') {
-        ambientLight.intensity = 0.4;
-        keyLight.intensity = 2.0;
-        keyLight.color.set(0xffeedd);
-        fillLight.intensity = 0.3;
-        rimLight.intensity = 1.2;
-      } else if (preset === 'soft') {
-        ambientLight.intensity = 1.2;
-        keyLight.intensity = 0.8;
-        fillLight.intensity = 0.8;
-        rimLight.intensity = 0.3;
-      } else if (preset === 'bright') {
-        ambientLight.intensity = 1.1;
-        keyLight.intensity = 1.6;
-        fillLight.intensity = 0.9;
-        rimLight.intensity = 0.6;
+    document.getElementById('toggle-wave')?.addEventListener('change', (e) => {
+      isWaving = e.target.checked;
+      if (!isWaving) {
+        if (currentPose === 't-pose') {
+          character.parts.rightArmGroup.rotation.z = -0.16;
+          character.parts.rightArmGroup.rotation.x = 0;
+        } else {
+          character.parts.rightArmGroup.rotation.z = -0.75;
+          character.parts.rightArmGroup.rotation.x = 0.1;
+        }
       }
-    };
+    });
 
     // Color Pickers
-    document.getElementById('picker-hair').addEventListener('input', (e) => {
-      character.materials.hair.color.set(e.target.value);
-    });
-    document.getElementById('picker-skin').addEventListener('input', (e) => {
-      character.materials.skin.color.set(e.target.value);
-    });
-    document.getElementById('picker-shirt').addEventListener('input', (e) => {
-      character.materials.shirt.color.set(e.target.value);
-    });
-    document.getElementById('picker-pants').addEventListener('input', (e) => {
-      character.materials.pants.color.set(e.target.value);
-    });
-    document.getElementById('picker-bg').addEventListener('input', (e) => {
-      scene.background.set(e.target.value);
+    const colorMap = {
+      'picker-hair': 'hair',
+      'picker-skin': 'skin',
+      'picker-shirt': 'shirt',
+      'picker-pants': 'pants',
+      'picker-eyebrows': 'eyebrows'
+    };
+
+    Object.keys(colorMap).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          const updateObj = {};
+          updateObj[prop] = e.target.value;
+          character.setColors(updateObj);
+        });
+      }
     });
 
-    window.resetDefaultColors = function() {
+    document.getElementById('picker-bg')?.addEventListener('input', (e) => {
+      scene.background.set(e.target.value);
+      if (scene.fog) scene.fog.color.set(e.target.value);
+    });
+
+    // Reset Colors
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      character.setColors(DEFAULT_COLORS);
       document.getElementById('picker-hair').value = DEFAULT_COLORS.hair;
       document.getElementById('picker-skin').value = DEFAULT_COLORS.skin;
       document.getElementById('picker-shirt').value = DEFAULT_COLORS.shirt;
       document.getElementById('picker-pants').value = DEFAULT_COLORS.pants;
-      document.getElementById('picker-bg').value = '#2d2f34';
+      document.getElementById('picker-eyebrows').value = DEFAULT_COLORS.eyebrows;
+      document.getElementById('picker-bg').value = '#191a22';
+      scene.background.set(0x191a22);
+      if (scene.fog) scene.fog.color.set(0x191a22);
+    });
 
-      character.setColors(DEFAULT_COLORS);
-      scene.background.set(0x2d2f34);
-    };
+    // Lighting Presets
+    document.querySelectorAll('[data-light]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-light]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const preset = btn.dataset.light;
+
+        if (preset === 'studio') {
+          ambientLight.intensity = 0.95;
+          keyLight.intensity = 1.25;
+          keyLight.color.set(0xfff8ee);
+          fillLight.intensity = 0.65;
+          rimLight.intensity = 0.45;
+        } else if (preset === 'dramatic') {
+          ambientLight.intensity = 0.40;
+          keyLight.intensity = 2.0;
+          keyLight.color.set(0xffeedd);
+          fillLight.intensity = 0.30;
+          rimLight.intensity = 1.2;
+        } else if (preset === 'soft') {
+          ambientLight.intensity = 1.25;
+          keyLight.intensity = 0.85;
+          fillLight.intensity = 0.80;
+          rimLight.intensity = 0.30;
+        } else if (preset === 'bright') {
+          ambientLight.intensity = 1.15;
+          keyLight.intensity = 1.60;
+          fillLight.intensity = 0.90;
+          rimLight.intensity = 0.60;
+        }
+      });
+    });
+
+    // View Settings
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      character.setWireframe(e.target.checked);
+    });
+
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
 
     // Reference Modal Toggle
     const refModal = document.getElementById('reference-modal');
-    document.getElementById('btn-toggle-ref').addEventListener('click', () => {
+    document.getElementById('btn-toggle-ref')?.addEventListener('click', () => {
       refModal.classList.toggle('hidden');
     });
-    document.getElementById('btn-close-ref').addEventListener('click', () => {
+    document.getElementById('btn-close-ref')?.addEventListener('click', () => {
       refModal.classList.add('hidden');
     });
 
-    // Sidebar Toggle
-    const sidebar = document.getElementById('sidebar');
-    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-    });
-
-    // GLB Export
-    window.exportGLB = function() {
+    // Export GLB
+    document.getElementById('btn-export-glb')?.addEventListener('click', () => {
       const exporter = new GLTFExporter();
       exporter.parse(
         character.model,
@@ -748,18 +860,18 @@
           link.href = URL.createObjectURL(blob);
           link.download = 'chibi-girl.glb';
           link.click();
+          URL.revokeObjectURL(link.href);
         },
         function (error) {
-          console.error('Lỗi khi xuất glTF:', error);
-          alert('Có lỗi khi tạo file GLB.');
+          console.error('Lỗi khi xuất GLB:', error);
+          alert('Không thể xuất GLB: ' + error);
         },
         { binary: true }
       );
-    };
-    document.getElementById('btn-export-glb').addEventListener('click', window.exportGLB);
+    });
 
-    // OBJ Export
-    window.exportOBJ = function() {
+    // Export OBJ
+    document.getElementById('btn-export-obj')?.addEventListener('click', () => {
       const exporter = new OBJExporter();
       const result = exporter.parse(character.model);
       const blob = new Blob([result], { type: 'text/plain' });
@@ -767,25 +879,19 @@
       link.href = URL.createObjectURL(blob);
       link.download = 'chibi-girl.obj';
       link.click();
-    };
-    document.getElementById('btn-export-obj').addEventListener('click', window.exportOBJ);
-
-    // HD Screenshot
-    window.takeScreenshot = function() {
-      renderer.render(scene, camera);
-      const dataURL = renderer.domElement.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = 'chibi-girl-render.png';
-      link.href = dataURL;
-      link.click();
-    };
-    document.getElementById('btn-screenshot').addEventListener('click', window.takeScreenshot);
+      URL.revokeObjectURL(link.href);
+    });
 
     // Render & Animation Loop
+    const clock = new THREE.Clock();
+
     function animate() {
       requestAnimationFrame(animate);
-
       const elapsedTime = clock.getElapsedTime();
+
+      // Auto rotation
+      controls.autoRotate = autoRotate;
+      controls.update();
 
       // Idle breathing animation
       if (isIdleBreathing) {
@@ -793,7 +899,7 @@
         character.parts.headGroup.position.y = initialHeadY + breath * 0.5;
         character.parts.headGroup.rotation.x = Math.sin(elapsedTime * 1.5) * 0.02;
 
-        if (currentPose === 't-pose') {
+        if (currentPose === 't-pose' && !isWaving) {
           character.parts.leftArmGroup.rotation.z = 0.16 + breath * 0.8;
           character.parts.rightArmGroup.rotation.z = -0.16 - breath * 0.8;
         }
@@ -805,7 +911,6 @@
         character.parts.rightArmGroup.rotation.x = Math.sin(elapsedTime * 8) * 0.25;
       }
 
-      controls.update();
       renderer.render(scene, camera);
     }
     animate();

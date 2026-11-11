@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3D Low-Poly Witch Preview</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #181322;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "../libs/three.module.js",
+      "three/addons/": "../libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createWitchCharacter } from '../js/witch-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x181322);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view') || 'front';
+
+    // Camera framed fairly for 1:1 comparison with witch_ref.png (model height ~0.935m)
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.48, 0);
+
+    if (view === 'front') {
+      camera.position.set(0, 0.49, 2.08);
+    } else if (view === '34') {
+      camera.position.set(1.32, 0.70, 1.78);
+    } else if (view === 'side') {
+      camera.position.set(2.18, 0.49, 0);
+    } else if (view === 'back') {
+      camera.position.set(0, 0.49, -2.08);
+    } else if (view === 'top') {
+      camera.position.set(0, 2.75, 0.01);
+    } else {
+      camera.position.set(0, 0.49, 2.08);
+    }
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(target);
+    controls.update();
+
+    // Balanced Studio Lighting with Warm Low Front Fill & Soft Pink-Violet Rim
+    const hemiLight = new THREE.HemisphereLight(0xf3ebff, 0x3b2a4d, 0.85);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff5ec, 1.25);
+    keyLight.position.set(-2.2, 4.0, 3.2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xc2b2e6, 0.72);
+    fillLight.position.set(3.0, 2.0, 2.6);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff1e6, 0.68);
+    frontLight.position.set(0, 0.75, 3.8);
+    scene.add(frontLight);
+
+    const backRim = new THREE.DirectionalLight(0xe5b8ff, 0.88);
+    backRim.position.set(-1.6, 2.2, -2.6);
+    scene.add(backRim);
+
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x20192b,
+      roughness: 0.9,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Character
+    const witchData = createWitchCharacter();
+    const poseParam = urlParams.get('pose');
+    if (poseParam) {
+      witchData.setPose(poseParam);
+    }
+    const effectUpdates = {};
+    if (urlParams.get('particles') === 'off') effectUpdates.particles = false;
+    if (urlParams.get('greenGlow') === 'off') effectUpdates.greenGlow = false;
+    if (urlParams.get('purpleGlow') === 'off') effectUpdates.purpleGlow = false;
+    const intensityParam = parseFloat(urlParams.get('intensity'));
+    if (!Number.isNaN(intensityParam)) effectUpdates.intensity = intensityParam;
+    if (Object.keys(effectUpdates).length > 0) {
+      witchData.setEffects(effectUpdates);
+    }
+    scene.add(witchData.model);
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      if (witchData.update) witchData.update(elapsed);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Automated Export Triggers
+    if (urlParams.get('export') === 'glb') {
+      const exporter = new GLTFExporter();
+      exporter.parseAsync(witchData.model, { binary: true })
+        .then((gltf) => {
+          const blob = new Blob([gltf], { type: 'application/octet-stream' });
+          return fetch('/save-file?name=witch.glb', { method: 'POST', body: blob });
+        })
+        .then(() => console.log('Witch GLB exported successfully'))
+        .catch((err) => console.error('Witch GLB export error:', err));
+    }
+
+    if (urlParams.get('export') === 'obj') {
+      setTimeout(() => {
+        const exporter = new OBJExporter();
+        const result = exporter.parse(witchData.model);
+        fetch('/save-file?name=witch.obj', { method: 'POST', body: result })
+          .then(() => console.log('Witch OBJ exported successfully'))
+          .catch((err) => console.error('Witch OBJ export error:', err));
+      }, 400);
+    }
+  </script>
+</body>
+</html>
+

@@ -392,11 +392,13 @@
       <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
       <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
       <a href="seer.html" class="char-btn active">🔮 Seer</a>
+      <a href="guard.html" class="char-btn">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
     </div>
 
     <!-- Quick Export Actions -->
     <div class="top-actions">
-      <a href="comparison_seer.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
+      <a href="pages/comparison_seer.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
       <button id="btn-export-glb" class="btn btn-primary" title="Tải mô hình chuẩn 3D GLB">📦 Tải .GLB</button>
       <button id="btn-export-obj" class="btn" title="Tải file OBJ Wavefront">💾 Tải .OBJ</button>
     </div>
@@ -439,8 +441,22 @@
         </label>
       </div>
       <div class="control-row">
+        <span>Ánh sáng quả cầu</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="orb-glow-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Hạt phép thuật</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="orb-particles-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
         <span>Quang thông phát sáng</span>
-        <input type="range" id="orb-light-intensity" min="0.5" max="4.0" step="0.1" value="2.0">
+        <input type="range" id="orb-light-intensity" min="0" max="2.2" step="0.05" value="1.0">
       </div>
     </div>
 
@@ -450,35 +466,35 @@
       
       <div class="control-row">
         <span>Mũ trùm (Hood)</span>
-        <input type="color" id="col-hood" value="#752986">
+        <input type="color" id="col-hood" value="#6c2f7c">
       </div>
       <div class="control-row">
         <span>Vành gấp mũ (Lip)</span>
-        <input type="color" id="col-lip" value="#8c369e">
+        <input type="color" id="col-lip" value="#7b388a">
       </div>
       <div class="control-row">
         <span>Da mặt Chibi (Skin)</span>
-        <input type="color" id="col-skin" value="#f9be9f">
+        <input type="color" id="col-skin" value="#f6ba96">
       </div>
       <div class="control-row">
         <span>Đá phép ngực (Gem)</span>
-        <input type="color" id="col-gem" value="#ea3eff">
+        <input type="color" id="col-gem" value="#dc5eff">
       </div>
       <div class="control-row">
         <span>Đai vàng eo (Belt)</span>
-        <input type="color" id="col-belt" value="#e2a42b">
+        <input type="color" id="col-belt" value="#d99b2e">
       </div>
       <div class="control-row">
         <span>Nếp sáng áo (Pleat)</span>
-        <input type="color" id="col-pleat" value="#9e2b9c">
+        <input type="color" id="col-pleat" value="#7d3484">
       </div>
       <div class="control-row">
         <span>Áo choàng ngoài (Cape)</span>
-        <input type="color" id="col-cape" value="#301036">
+        <input type="color" id="col-cape" value="#391846">
       </div>
       <div class="control-row">
         <span>Quả cầu phép (Orb)</span>
-        <input type="color" id="col-orb" value="#c832f0">
+        <input type="color" id="col-orb" value="#cf42ff">
       </div>
 
       <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
@@ -532,7 +548,7 @@
     import { OrbitControls } from 'three/addons/OrbitControls.js';
     import { GLTFExporter } from 'three/addons/GLTFExporter.js';
     import { OBJExporter } from 'three/addons/OBJExporter.js';
-    import { createSeerCharacter, SEER_DEFAULT_COLORS } from './seer-model.js';
+    import { createSeerCharacter, SEER_DEFAULT_COLORS } from './js/seer-model.js';
 
     const container = document.getElementById('canvas-container');
     const width = window.innerWidth;
@@ -540,15 +556,15 @@
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x191422);
+    scene.background = new THREE.Color(0x181322);
 
     // Fog for atmospheric depth
-    scene.fog = new THREE.FogExp2(0x191422, 0.08);
+    scene.fog = new THREE.FogExp2(0x181322, 0.055);
 
-    // Camera setup (Character height ~1.15, centered at 0.58)
+    // Camera setup (Character height ~0.92m, centered at 0.46)
     const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
-    const target = new THREE.Vector3(0, 0.58, 0);
-    camera.position.set(0, 0.58, 2.3);
+    const target = new THREE.Vector3(0, 0.46, 0);
+    camera.position.set(0, 0.48, 2.18);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -557,7 +573,7 @@
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.08;
     container.appendChild(renderer.domElement);
 
     // Controls
@@ -570,31 +586,35 @@
     controls.maxDistance = 6.0;
     controls.update();
 
-    // Studio Dark Fantasy Lighting
-    const ambientLight = new THREE.AmbientLight(0xdcd4e4, 0.85);
-    scene.add(ambientLight);
+    // Studio Dark Fantasy Lighting (warm peach skin preservation + gentle hood rim + soft inner cavity depth)
+    const hemiLight = new THREE.HemisphereLight(0xfff4ed, 0x5c3e5a, 0.94);
+    scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight(0xfff2e4, 1.25);
-    keyLight.position.set(2.8, 4.8, 3.5);
+    const keyLight = new THREE.DirectionalLight(0xfff4ea, 1.15);
+    keyLight.position.set(-1.9, 3.2, 3.5);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 2048;
     keyLight.shadow.mapSize.height = 2048;
     keyLight.shadow.camera.near = 0.5;
-    keyLight.shadow.camera.far = 12;
+    keyLight.shadow.camera.far = 10;
+    keyLight.shadow.camera.left = -1.4;
+    keyLight.shadow.camera.right = 1.4;
+    keyLight.shadow.camera.top = 1.6;
+    keyLight.shadow.camera.bottom = -1.4;
     keyLight.shadow.bias = -0.0005;
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x9888b4, 0.65);
-    fillLight.position.set(-3.5, 2.5, 2.5);
+    const fillLight = new THREE.DirectionalLight(0xf3e8f8, 0.88);
+    fillLight.position.set(2.7, 1.35, 3.1);
     scene.add(fillLight);
 
-    const frontLight = new THREE.DirectionalLight(0xfff4ea, 0.60);
-    frontLight.position.set(0, 1.2, 4.0);
+    const frontLight = new THREE.DirectionalLight(0xfff1e6, 0.79);
+    frontLight.position.set(0.12, 0.44, 3.9);
     scene.add(frontLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffb26c, 0.65);
-    rimLight.position.set(-3.2, 3.5, 1.8);
-    scene.add(rimLight);
+    const backRim = new THREE.DirectionalLight(0xe3b8ff, 1.02);
+    backRim.position.set(-1.5, 2.3, -2.5);
+    scene.add(backRim);
 
     // Low-poly pedestal / ground disc
     const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
@@ -627,7 +647,7 @@
       controls.autoRotate = autoRotate;
       controls.update();
 
-      if (isFloatingOrb && seerData.update) {
+      if (seerData.update) {
         seerData.update(elapsed);
       }
 
@@ -650,23 +670,23 @@
         const cam = btn.dataset.cam;
 
         if (cam === 'front') {
-          camera.position.set(0, 0.58, 2.3);
-          controls.target.set(0, 0.58, 0);
+          camera.position.set(0, 0.48, 2.18);
+          controls.target.set(0, 0.46, 0);
         } else if (cam === 'perspective') {
-          camera.position.set(1.5, 0.82, 1.9);
-          controls.target.set(0, 0.58, 0);
+          camera.position.set(1.38, 0.70, 1.86);
+          controls.target.set(0, 0.46, 0);
         } else if (cam === 'side') {
-          camera.position.set(2.3, 0.58, 0);
-          controls.target.set(0, 0.58, 0);
+          camera.position.set(2.18, 0.48, 0);
+          controls.target.set(0, 0.46, 0);
         } else if (cam === 'back') {
-          camera.position.set(0, 0.58, -2.3);
-          controls.target.set(0, 0.58, 0);
+          camera.position.set(0, 0.48, -2.18);
+          controls.target.set(0, 0.46, 0);
         } else if (cam === 'top') {
-          camera.position.set(0, 3.0, 0.01);
-          controls.target.set(0, 0.58, 0);
+          camera.position.set(0, 2.8, 0.01);
+          controls.target.set(0, 0.46, 0);
         } else if (cam === 'close') {
-          camera.position.set(0, 0.80, 1.05);
-          controls.target.set(0, 0.80, 0);
+          camera.position.set(0, 0.54, 1.05);
+          controls.target.set(0, 0.54, 0);
         }
       });
     });
@@ -737,16 +757,23 @@
     // Orb float toggle
     document.getElementById('orb-float-toggle')?.addEventListener('change', (e) => {
       isFloatingOrb = e.target.checked;
+      seerData.setEffects({ orbFloat: e.target.checked });
+    });
+
+    // Orb glow toggle
+    document.getElementById('orb-glow-toggle')?.addEventListener('change', (e) => {
+      seerData.setEffects({ orbGlow: e.target.checked });
+    });
+
+    // Orb particles toggle
+    document.getElementById('orb-particles-toggle')?.addEventListener('change', (e) => {
+      seerData.setEffects({ particles: e.target.checked });
     });
 
     // Orb Light intensity
     document.getElementById('orb-light-intensity')?.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value);
-      const orbAnchor = seerData.parts.orbAnchor;
-      if (orbAnchor) {
-        const pointLight = orbAnchor.children.find(c => c.isPointLight);
-        if (pointLight) pointLight.intensity = val;
-      }
+      seerData.setEffects({ intensity: val });
     });
 
     // Export GLB

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Side-by-Side Comparison: Werewolf Reference vs 3D Model</title>
+  <style>
+    body {
+      margin: 0;
+      background: #18161f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h2 {
+      margin-bottom: 16px;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      color: #ff4d5a;
+    }
+    .comparison-container {
+      display: flex;
+      gap: 16px;
+      background: #23202c;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ff7580;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .img-box {
+      width: 400px;
+      height: 520px;
+      background: #282633;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <h2>🐺 Đối Chiếu 1:1 — Ảnh Concept Mẫu vs Mô Hình 3D Procedural Three.js</h2>
+  <div class="comparison-container">
+    <div class="col">
+      <div class="label">Ảnh Mẫu Gốc (Concept)</div>
+      <div class="img-box">
+        <img src="../assets/references/wolf_ref.jpg" alt="Ảnh mẫu gốc">
+      </div>
+    </div>
+    <div class="col">
+      <div class="label">Mô Hình 3D (Góc 3/4 Khớp Mẫu)</div>
+      <div class="img-box">
+        <img src="../assets/renders/render_wolf_34.png" alt="Mô hình 3D góc 3/4">
+      </div>
+    </div>
+    <div class="col">
+      <div class="label">Mô Hình 3D (Góc Chính Diện)</div>
+      <div class="img-box">
+        <img src="../assets/renders/render_wolf_front.png" alt="Mô hình 3D góc chính diện">
+      </div>
+    </div>
+  </div>
+</body>
+</html>

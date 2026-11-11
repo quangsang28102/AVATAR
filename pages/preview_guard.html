@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3D Low-Poly Guard Preview</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #161720;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "../libs/three.module.js",
+      "three/addons/": "../libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { GLTFExporter } from 'three/addons/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/OBJExporter.js';
+    import { createGuardCharacter } from '../js/guard-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x161720);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view') || 'front';
+
+    // Camera setup for Guard (Total Height ~ 1.00, center ~ 0.49)
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.49, 0);
+
+    if (view === 'front') {
+      camera.position.set(0, 0.51, 2.30);
+    } else if (view === '34') {
+      camera.position.set(1.50, 0.72, 1.90);
+    } else if (view === 'side') {
+      camera.position.set(2.30, 0.51, 0);
+    } else if (view === 'back') {
+      camera.position.set(0, 0.51, -2.30);
+    } else if (view === 'top') {
+      camera.position.set(0, 2.80, 0.01);
+    } else {
+      camera.position.set(0, 0.51, 2.30);
+    }
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(target);
+    controls.update();
+
+    // Soft Neutral Studio Lighting (Warm-White Top-Left Key + Cool Right Fill, NO Orange Floor Light)
+    const ambientLight = new THREE.AmbientLight(0xd8dde8, 0.45);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xeef2fa, 0x262530, 0.55);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff6ec, 1.35);
+    keyLight.position.set(-2.5, 4.0, 2.8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xaab8d2, 0.78);
+    fillLight.position.set(3.0, 2.2, 2.2);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xf6f6fa, 0.48);
+    frontLight.position.set(0, 1.1, 3.5);
+    scene.add(frontLight);
+
+    const backRim = new THREE.DirectionalLight(0xd4def0, 0.50);
+    backRim.position.set(-1.2, 2.6, -2.8);
+    scene.add(backRim);
+
+    // Floor Pedestal Disc
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x1d1e2a,
+      roughness: 0.90,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Character
+    const guardData = createGuardCharacter();
+    const poseParam = urlParams.get('pose');
+    if (poseParam) {
+      guardData.setPose(poseParam);
+    }
+    const glowParam = urlParams.get('glow');
+    if (glowParam === 'off' || glowParam === 'false' || glowParam === '0') {
+      guardData.setShieldGlow(false);
+    }
+    const intensityParam = parseFloat(urlParams.get('intensity'));
+    if (!Number.isNaN(intensityParam)) {
+      guardData.setShieldGlowIntensity(intensityParam);
+    }
+    scene.add(guardData.model);
+
+    // Animation loop (offset clock slightly for static ?pose=defend captures so aura has expanded)
+    const clock = new THREE.Clock();
+    const timeOffset = poseParam === 'defend' ? 0.65 : 0.20;
+    if (guardData.update) guardData.update(timeOffset);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = timeOffset + clock.getElapsedTime();
+      if (guardData.update) guardData.update(elapsed);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Export Trigger via URL
+    if (urlParams.get('export') === 'glb') {
+      const exporter = new GLTFExporter();
+      exporter.parseAsync(guardData.model, { binary: true })
+        .then(gltf => {
+          const blob = new Blob([gltf], { type: 'application/octet-stream' });
+          return fetch('/save-file?name=guard.glb', {
+            method: 'POST',
+            body: blob
+          });
+        })
+        .then(() => console.log('GLB exported successfully'))
+        .catch(err => console.error('Export error:', err));
+    }
+
+    if (urlParams.get('export') === 'obj') {
+      setTimeout(() => {
+        const exporter = new OBJExporter();
+        const result = exporter.parse(guardData.model);
+        fetch('/save-file?name=guard.obj', {
+          method: 'POST',
+          body: result
+        }).then(() => console.log('OBJ exported successfully'));
+      }, 500);
+    }
+  </script>
+</body>
+</html>
