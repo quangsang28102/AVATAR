@@ -1,0 +1,33 @@
+# 3D Binary & Model Files (Chống trích xuất / clone model thô)
+assets/models/
+*.glb
+*.gltf
+*.obj
+*.fbx
+*.stl
+
+# Thư mục mã nguồn gốc chưa obfuscate (chỉ lưu cục bộ, không push lên GitHub)
+_source_models/
+
+# Thư viện Exporter trích xuất mô hình (không đưa lên GitHub)
+libs/GLTFExporter.js
+libs/OBJExporter.js
+
+# Công cụ dev render nội bộ
+tools/
+pages/preview*.html
+
+# Build & Dist
+dist/
+build/
+node_modules/
+
+# Python & Tool caches
+__pycache__/
+*.pyc
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.bak

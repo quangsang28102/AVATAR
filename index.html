@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô hình 3D Chibi Girl — Cô Gái Chibi (Three.js Low-Poly Stylized)</title>
+  <style>
+    :root {
+      --bg-dark: #191a22;
+      --panel-bg: rgba(24, 25, 35, 0.88);
+      --panel-border: rgba(255, 101, 132, 0.22);
+      --accent: #ff6584;
+      --accent-hover: #ff859f;
+      --accent-glow: rgba(255, 101, 132, 0.45);
+      --accent-pink: #d64567;
+      --text-main: #f3effa;
+      --text-dim: #a69bb8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      padding: 10px 18px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-badge h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-badge p {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(18, 14, 26, 0.90);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 3px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .char-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #e8597b, #c4385a);
+      box-shadow: 0 2px 14px rgba(232, 89, 123, 0.5);
+      border: 1px solid rgba(255, 101, 132, 0.4);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: rgba(48, 38, 68, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e8597b, #c4385a);
+      border-color: rgba(255, 101, 132, 0.4);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #f56b8c, #d64567);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(370px);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(255, 101, 132, 0.22);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Bottom Info Badge */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-pill b {
+      color: #fff;
+    }
+
+    /* Picture-in-Picture Reference Window */
+    #reference-modal {
+      position: absolute;
+      bottom: 70px;
+      left: 20px;
+      z-index: 20;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 220px;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    #reference-modal.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.9) translateY(20px);
+    }
+
+    .ref-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .ref-close {
+      cursor: pointer;
+      color: #888;
+      font-size: 16px;
+      background: none;
+      border: none;
+    }
+
+    .ref-close:hover {
+      color: #fff;
+    }
+
+    #reference-modal img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 1279px) {
+      header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+      .brand-badge {
+        order: 1;
+        padding: 7px 13px;
+        white-space: nowrap;
+      }
+      .brand-badge h1 {
+        font-size: 14px;
+      }
+      .brand-badge p {
+        font-size: 10.5px;
+      }
+      .top-actions {
+        order: 2;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .top-actions .btn {
+        padding: 7px 11px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .char-switch {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .sidebar {
+        top: 122px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 290px;
+      }
+      #reference-modal {
+        width: 170px;
+        bottom: 80px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🌸 Chibi Girl (Cô Gái Chibi) <span>✨</span></h1>
+      <p>3D Low-Poly Stylized Recreation • Three.js</p>
+    </div>
+
+    <!-- Character Switcher Bar -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn active">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+      <a href="guard.html" class="char-btn">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
+      <a href="hunter.html" class="char-btn">🏹 Hunter</a>
+      <a href="geisha.html" class="char-btn">🌺 Geisha</a>
+      <a href="half-werewolf.html" class="char-btn" title="Bán Sói (Người Sói Bán Nhân)">🌓 Half-Werewolf</a>
+    </div>
+
+    <!-- Actions -->
+    <div class="top-actions">
+      <a href="pages/comparison.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh gốc">🔍 So sánh 1:1</a>
+      <button id="btn-toggle-ref" class="btn" title="Bật/Tắt ảnh mẫu thu nhỏ">🖼️ Ảnh mẫu gốc</button>
+    </div>
+  </header>
+
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
+      </div>
+    </div>
+
+    <!-- Pose Section -->
+    <div class="sidebar-section">
+      <div class="section-title">💃 Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="t-pose">🧍 T-Pose (Gốc)</button>
+        <button class="btn-option" data-pose="a-pose">🚶 Thả lỏng (A-Pose)</button>
+      </div>
+    </div>
+
+    <!-- Animations & Gestures -->
+    <div class="sidebar-section">
+      <div class="section-title">✨ Cử chỉ & Hoạt ảnh Chibi</div>
+      <div class="control-row">
+        <span>Nhịp thở nhẹ nhàng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-breathe" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Vẫy tay chào</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-wave">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live Color Customizer -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+      
+      <div class="control-row">
+        <span>Mái tóc (Hair)</span>
+        <input type="color" id="picker-hair" value="#363748">
+      </div>
+      <div class="control-row">
+        <span>Làn da (Skin)</span>
+        <input type="color" id="picker-skin" value="#f8c8b4">
+      </div>
+      <div class="control-row">
+        <span>Áo sơ mi (Shirt)</span>
+        <input type="color" id="picker-shirt" value="#6a7080">
+      </div>
+      <div class="control-row">
+        <span>Quần dài (Pants)</span>
+        <input type="color" id="picker-pants" value="#545866">
+      </div>
+      <div class="control-row">
+        <span>Lông mày (Eyebrows)</span>
+        <input type="color" id="picker-eyebrows" value="#2b2936">
+      </div>
+      <div class="control-row">
+        <span>Màu nền (Background)</span>
+        <input type="color" id="picker-bg" value="#191a22">
+      </div>
+
+      <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
+        ↩ Đặt lại màu chuẩn
+      </button>
+    </div>
+
+    <!-- Lighting Presets -->
+    <div class="sidebar-section">
+      <div class="section-title">💡 Ánh sáng Studio</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-light="studio">Studio</button>
+        <button class="btn-option" data-light="dramatic">Kịch tính</button>
+        <button class="btn-option" data-light="soft">Mềm mại</button>
+        <button class="btn-option" data-light="bright">Tươi sáng</button>
+      </div>
+    </div>
+
+    <!-- View & Display Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Tùy chọn hiển thị</div>
+      <div class="control-row">
+        <span>Khung lưới (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📌 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Reference Picture-in-Picture Modal -->
+  <div id="reference-modal" class="hidden">
+    <div class="ref-header">
+      <span>Ảnh mẫu gốc (girl.png)</span>
+      <button class="ref-close" id="btn-close-ref">✕</button>
+    </div>
+    <img src="assets/references/girl.png" alt="Ảnh mẫu gốc girl.png">
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { createGirlCharacter, DEFAULT_COLORS } from './js/girl-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // 1. Scene Setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x191a22);
+    scene.fog = new THREE.FogExp2(0x191a22, 0.04);
+
+    // 2. Camera Setup (Model centered around X = -0.40, Y = 1.11, Z = 0)
+    const cameraTargets = {
+      'front':       { pos: new THREE.Vector3(-0.40, 1.15, 5.2), target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'perspective': { pos: new THREE.Vector3(2.5, 1.6, 4.5),    target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'side':        { pos: new THREE.Vector3(4.8, 1.15, 0),     target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'back':        { pos: new THREE.Vector3(-0.40, 1.15, -5.2),target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'top':         { pos: new THREE.Vector3(-0.40, 5.8, 0.1),  target: new THREE.Vector3(-0.40, 1.11, 0) },
+      'close':       { pos: new THREE.Vector3(-0.40, 1.65, 2.4), target: new THREE.Vector3(-0.40, 1.55, 0) }
+    };
+
+    const camera = new THREE.PerspectiveCamera(32, width / height, 0.1, 100);
+    camera.position.copy(cameraTargets.front.pos);
+
+    // 3. Renderer Setup
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    // 4. OrbitControls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(cameraTargets.front.target);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 1.8;
+    controls.maxDistance = 18.0;
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.update();
+
+    // 5. Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 0.95);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff8ee, 1.25);
+    keyLight.position.set(3.2, 4.8, 4.2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xc8d8f0, 0.65);
+    fillLight.position.set(-4.0, 2.5, 3.0);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff5ea, 0.55);
+    frontLight.position.set(0, 1.5, 5.0);
+    scene.add(frontLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffb288, 0.45);
+    rimLight.position.set(0, 4.5, -4.0);
+    scene.add(rimLight);
+
+    // Low-poly ground pedestal disc (Centered on character X = -0.40)
+    const floorGeo = new THREE.CylinderGeometry(2.0, 2.1, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x161720,
+      roughness: 0.92,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.set(-0.40, -0.03, 0);
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // 6. Character Instance
+    const character = createGirlCharacter();
+    scene.add(character.model);
+    const initialHeadY = character.parts.headGroup.position.y;
+
+    // State
+    let currentPose = 't-pose';
+    let isIdleBreathing = true;
+    let isWaving = false;
+    let autoRotate = false;
+
+    // Camera preset switcher
+    document.querySelectorAll('[data-cam]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cam]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+        const cfg = cameraTargets[cam];
+        if (cfg) {
+          // Smooth transition
+          const startPos = camera.position.clone();
+          const startTarget = controls.target.clone();
+          const duration = 500;
+          const startTime = performance.now();
+
+          function updateCam(t) {
+            const elapsed = t - startTime;
+            const p = Math.min(1, elapsed / duration);
+            const ease = 1 - Math.pow(1 - p, 3);
+            camera.position.lerpVectors(startPos, cfg.pos, ease);
+            controls.target.lerpVectors(startTarget, cfg.target, ease);
+            controls.update();
+            if (p < 1) requestAnimationFrame(updateCam);
+          }
+          requestAnimationFrame(updateCam);
+        }
+      });
+    });
+
+    // Pose Switcher
+    document.querySelectorAll('[data-pose]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const poseName = btn.dataset.pose;
+        currentPose = poseName;
+
+        if (poseName === 't-pose') {
+          character.parts.leftArmGroup.rotation.z = 0.16;
+          character.parts.rightArmGroup.rotation.z = -0.16;
+          character.parts.leftArmGroup.rotation.x = 0;
+          character.parts.rightArmGroup.rotation.x = 0;
+        } else if (poseName === 'a-pose') {
+          character.parts.leftArmGroup.rotation.z = 0.75;
+          character.parts.rightArmGroup.rotation.z = -0.75;
+          character.parts.leftArmGroup.rotation.x = 0.1;
+          character.parts.rightArmGroup.rotation.x = 0.1;
+        }
+      });
+    });
+
+    // Gesture Toggles
+    document.getElementById('toggle-breathe')?.addEventListener('change', (e) => {
+      isIdleBreathing = e.target.checked;
+      if (!isIdleBreathing) {
+        character.parts.headGroup.position.y = initialHeadY;
+        character.parts.headGroup.rotation.x = 0;
+      }
+    });
+
+    document.getElementById('toggle-wave')?.addEventListener('change', (e) => {
+      isWaving = e.target.checked;
+      if (!isWaving) {
+        if (currentPose === 't-pose') {
+          character.parts.rightArmGroup.rotation.z = -0.16;
+          character.parts.rightArmGroup.rotation.x = 0;
+        } else {
+          character.parts.rightArmGroup.rotation.z = -0.75;
+          character.parts.rightArmGroup.rotation.x = 0.1;
+        }
+      }
+    });
+
+    // Color Pickers
+    const colorMap = {
+      'picker-hair': 'hair',
+      'picker-skin': 'skin',
+      'picker-shirt': 'shirt',
+      'picker-pants': 'pants',
+      'picker-eyebrows': 'eyebrows'
+    };
+
+    Object.keys(colorMap).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          const updateObj = {};
+          updateObj[prop] = e.target.value;
+          character.setColors(updateObj);
+        });
+      }
+    });
+
+    document.getElementById('picker-bg')?.addEventListener('input', (e) => {
+      scene.background.set(e.target.value);
+      if (scene.fog) scene.fog.color.set(e.target.value);
+    });
+
+    // Reset Colors
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      character.setColors(DEFAULT_COLORS);
+      document.getElementById('picker-hair').value = DEFAULT_COLORS.hair;
+      document.getElementById('picker-skin').value = DEFAULT_COLORS.skin;
+      document.getElementById('picker-shirt').value = DEFAULT_COLORS.shirt;
+      document.getElementById('picker-pants').value = DEFAULT_COLORS.pants;
+      document.getElementById('picker-eyebrows').value = DEFAULT_COLORS.eyebrows;
+      document.getElementById('picker-bg').value = '#191a22';
+      scene.background.set(0x191a22);
+      if (scene.fog) scene.fog.color.set(0x191a22);
+    });
+
+    // Lighting Presets
+    document.querySelectorAll('[data-light]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-light]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const preset = btn.dataset.light;
+
+        if (preset === 'studio') {
+          ambientLight.intensity = 0.95;
+          keyLight.intensity = 1.25;
+          keyLight.color.set(0xfff8ee);
+          fillLight.intensity = 0.65;
+          rimLight.intensity = 0.45;
+        } else if (preset === 'dramatic') {
+          ambientLight.intensity = 0.40;
+          keyLight.intensity = 2.0;
+          keyLight.color.set(0xffeedd);
+          fillLight.intensity = 0.30;
+          rimLight.intensity = 1.2;
+        } else if (preset === 'soft') {
+          ambientLight.intensity = 1.25;
+          keyLight.intensity = 0.85;
+          fillLight.intensity = 0.80;
+          rimLight.intensity = 0.30;
+        } else if (preset === 'bright') {
+          ambientLight.intensity = 1.15;
+          keyLight.intensity = 1.60;
+          fillLight.intensity = 0.90;
+          rimLight.intensity = 0.60;
+        }
+      });
+    });
+
+    // View Settings
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      character.setWireframe(e.target.checked);
+    });
+
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    // Reference Modal Toggle
+    const refModal = document.getElementById('reference-modal');
+    document.getElementById('btn-toggle-ref')?.addEventListener('click', () => {
+      refModal.classList.toggle('hidden');
+    });
+    document.getElementById('btn-close-ref')?.addEventListener('click', () => {
+      refModal.classList.add('hidden');
+    });
+
+    // Anti-ripping protections
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    });
+
+    // Render & Animation Loop
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+
+      // Auto rotation
+      controls.autoRotate = autoRotate;
+      controls.update();
+
+      // Idle breathing animation
+      if (isIdleBreathing) {
+        const breath = Math.sin(elapsedTime * 2.5) * 0.015;
+        character.parts.headGroup.position.y = initialHeadY + breath * 0.5;
+        character.parts.headGroup.rotation.x = Math.sin(elapsedTime * 1.5) * 0.02;
+
+        if (currentPose === 't-pose' && !isWaving) {
+          character.parts.leftArmGroup.rotation.z = 0.16 + breath * 0.8;
+          character.parts.rightArmGroup.rotation.z = -0.16 - breath * 0.8;
+        }
+      }
+
+      // Cute wave animation
+      if (isWaving) {
+        character.parts.rightArmGroup.rotation.z = -1.8;
+        character.parts.rightArmGroup.rotation.x = Math.sin(elapsedTime * 8) * 0.25;
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Window Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
+

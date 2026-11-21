@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:," />
+  <title>Mô hình 3D Geisha — Kỹ Nữ Bí Ẩn (Three.js Low-Poly Chibi Stylized)</title>
+  <style>
+    :root {
+      --bg-dark: #1b1318;
+      --panel-bg: rgba(30, 20, 27, 0.88);
+      --panel-border: rgba(240, 132, 162, 0.28);
+      --accent: #f084a2;
+      --accent-hover: #ffa3bd;
+      --accent-glow: rgba(240, 132, 162, 0.45);
+      --text-main: #f8eff4;
+      --text-dim: #b89ead;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Top Navigation Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      padding: 9px 15px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      white-space: nowrap;
+    }
+
+    .brand-badge h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .brand-badge p {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      background: rgba(24, 15, 22, 0.92);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 3px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .char-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #d8527b, #862a4c);
+      box-shadow: 0 2px 14px rgba(216, 82, 123, 0.55);
+      border: 1px solid rgba(240, 132, 162, 0.48);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 8px 13px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: rgba(54, 30, 46, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #d8527b, #862a4c);
+      border-color: rgba(240, 132, 162, 0.48);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ea6a91, #9e335a);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 330px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(240, 132, 162, 0.35);
+      border-radius: 4px;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(240, 132, 162, 0.24);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      margin-left: 12px;
+      accent-color: var(--accent);
+    }
+
+    .control-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Bottom Info Badge */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-pill b {
+      color: #fff;
+    }
+
+    @media (max-width: 1279px) {
+      header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+      .brand-badge {
+        order: 1;
+        padding: 7px 13px;
+        white-space: nowrap;
+      }
+      .brand-badge h1 {
+        font-size: 14px;
+      }
+      .brand-badge p {
+        font-size: 10.5px;
+      }
+      .top-actions {
+        order: 2;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .top-actions .btn {
+        padding: 7px 11px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .char-switch {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .sidebar {
+        top: 122px;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .sidebar {
+        width: 290px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🌺 Geisha (Kỹ Nữ Bí Ẩn) <span>🌸</span></h1>
+      <p>3D Low-Poly Stylized Character • Three.js</p>
+    </div>
+
+    <!-- Character Switcher Bar -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+      <a href="guard.html" class="char-btn">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
+      <a href="hunter.html" class="char-btn">🏹 Hunter</a>
+      <a href="geisha.html" class="char-btn active">🌺 Geisha</a>
+      <a href="half-werewolf.html" class="char-btn" title="Bán Sói (Người Sói Bán Nhân)">🌓 Half-Werewolf</a>
+    </div>
+
+    <!-- Actions -->
+    <div class="top-actions">
+      <a href="pages/comparison_geisha.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh mẫu gốc">🔍 So sánh 1:1</a>
+    </div>
+  </header>
+
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
+      </div>
+    </div>
+
+    <!-- Pose Section -->
+    <div class="sidebar-section">
+      <div class="section-title">⚡ Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="idle">🌺 Mặc định (Idle)</button>
+        <button class="btn-option" data-pose="grace">🙏 Nghiêng chào</button>
+        <button class="btn-option" data-pose="dance">💃 Vũ điệu</button>
+        <button class="btn-option" data-pose="t-pose">🧍 T-Pose (Rig)</button>
+      </div>
+    </div>
+
+    <!-- Geisha FX & Veil Controls -->
+    <div class="sidebar-section">
+      <div class="section-title">🌸 Hiệu ứng & Khăn che mặt</div>
+      <div class="control-row">
+        <span>Cánh hoa anh đào</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="petals-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Độ mờ khăn che mặt</span>
+        <input type="range" id="veil-opacity-slider" min="0" max="100" value="80" aria-label="Độ mờ khăn che mặt">
+        <span id="veil-opacity-val" style="min-width:36px; text-align:right; color:var(--text-dim); font-size:12px;">80%</span>
+      </div>
+      <div class="control-row">
+        <span>Nhịp thở nhẹ nhàng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="breathe-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live Color Customizer -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+
+      <div class="control-row">
+        <span>Tóc búi (Hair)</span>
+        <input type="color" id="col-hair" value="#5e2c3f">
+      </div>
+      <div class="control-row">
+        <span>Dây buộc búi (Bun Tie)</span>
+        <input type="color" id="col-buntie" value="#eb6d89">
+      </div>
+      <div class="control-row">
+        <span>Trâm vàng (Hairpin)</span>
+        <input type="color" id="col-hairpin" value="#e6ae52">
+      </div>
+      <div class="control-row">
+        <span>Hoa anh đào (Sakura)</span>
+        <input type="color" id="col-sakura" value="#f287a5">
+      </div>
+      <div class="control-row">
+        <span>Da Chibi (Skin)</span>
+        <input type="color" id="col-skin" value="#f2b798">
+      </div>
+      <div class="control-row">
+        <span>Khuyên tai (Earrings)</span>
+        <input type="color" id="col-earrings" value="#dc4b6c">
+      </div>
+      <div class="control-row">
+        <span>Khăn che mặt (Veil)</span>
+        <input type="color" id="col-veil" value="#cf758e">
+      </div>
+      <div class="control-row">
+        <span>Áo Kimono (Kimono)</span>
+        <input type="color" id="col-kimono" value="#8e2e52">
+      </div>
+      <div class="control-row">
+        <span>Cổ áo (Collar)</span>
+        <input type="color" id="col-collar" value="#dc7492">
+      </div>
+      <div class="control-row">
+        <span>Tà váy giữa (Skirt Panel)</span>
+        <input type="color" id="col-skirtpanel" value="#d4698a">
+      </div>
+      <div class="control-row">
+        <span>Sọc Obi sáng (Obi Light)</span>
+        <input type="color" id="col-obilight" value="#d66384">
+      </div>
+      <div class="control-row">
+        <span>Sọc Obi tối (Obi Dark)</span>
+        <input type="color" id="col-obidark" value="#6e2b40">
+      </div>
+
+      <button id="btn-reset-colors" class="btn" style="width: 100%; justify-content: center; margin-top: 6px;">
+        ↺ Đặt lại màu chuẩn
+      </button>
+    </div>
+
+    <!-- View & Display Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Tùy chọn hiển thị</div>
+      <div class="control-row">
+        <span>Khung lưới (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📌 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { createGeishaCharacter, GEISHA_DEFAULT_COLORS } from './js/geisha-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1b1318);
+    scene.fog = new THREE.FogExp2(0x1b1318, 0.055);
+
+    // Camera framed for total Geisha height ~0.88m
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.44, 0);
+    camera.position.set(0, 0.46, 2.04);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.copy(target);
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.minDistance = 0.8;
+    controls.maxDistance = 6.0;
+    controls.update();
+
+    // Balanced Studio Lighting with Warm Crown Rim & Soft Front Fill
+    const hemiLight = new THREE.HemisphereLight(0xffedf4, 0x3a202d, 0.88);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff4eb, 1.24);
+    keyLight.position.set(-2.2, 4.0, 3.2);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 12;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0xd4b5cb, 0.72);
+    fillLight.position.set(3.0, 2.0, 2.6);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfff1ea, 0.68);
+    frontLight.position.set(0, 0.75, 3.8);
+    scene.add(frontLight);
+
+    const backRim = new THREE.DirectionalLight(0xffb485, 0.92);
+    backRim.position.set(-1.6, 2.4, -2.5);
+    scene.add(backRim);
+
+    // Pedestal Ground Disc
+    const floorGeo = new THREE.CylinderGeometry(1.6, 1.7, 0.06, 24);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x261a21,
+      roughness: 0.9,
+      metalness: 0.05,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Character
+    const geishaData = createGeishaCharacter();
+    scene.add(geishaData.model);
+
+    // State
+    let autoRotate = false;
+    let isBreathing = true;
+
+    // Camera Presets
+    document.querySelectorAll('[data-cam]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cam]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+        if (cam === 'front') {
+          camera.position.set(0, 0.46, 2.04);
+          controls.target.set(0, 0.44, 0);
+        } else if (cam === 'perspective') {
+          camera.position.set(1.28, 0.68, 1.72);
+          controls.target.set(0, 0.44, 0);
+        } else if (cam === 'side') {
+          camera.position.set(2.06, 0.46, 0);
+          controls.target.set(0, 0.44, 0);
+        } else if (cam === 'back') {
+          camera.position.set(0, 0.46, -2.04);
+          controls.target.set(0, 0.44, 0);
+        } else if (cam === 'top') {
+          camera.position.set(0, 2.65, 0.01);
+          controls.target.set(0, 0.44, 0);
+        } else if (cam === 'close') {
+          camera.position.set(0, 0.62, 1.02);
+          controls.target.set(0, 0.60, 0);
+        }
+        controls.update();
+      });
+    });
+
+    // Pose Presets
+    document.querySelectorAll('[data-pose]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        geishaData.setPose(btn.dataset.pose);
+      });
+    });
+
+    // Color Pickers
+    const colorMap = {
+      'col-hair': 'hair',
+      'col-buntie': 'bunTie',
+      'col-hairpin': 'hairpin',
+      'col-sakura': 'sakura',
+      'col-skin': 'skin',
+      'col-earrings': 'earrings',
+      'col-veil': 'veil',
+      'col-kimono': 'kimono',
+      'col-collar': 'collar',
+      'col-skirtpanel': 'skirtPanel',
+      'col-obilight': 'obiLight',
+      'col-obidark': 'obiDark'
+    };
+
+    Object.keys(colorMap).forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          geishaData.setColors({ [prop]: e.target.value });
+        });
+      }
+    });
+
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      geishaData.setColors(GEISHA_DEFAULT_COLORS);
+      Object.entries(colorMap).forEach(([id, prop]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = GEISHA_DEFAULT_COLORS[prop];
+      });
+    });
+
+    // Effects Controls
+    document.getElementById('petals-toggle')?.addEventListener('change', (e) => {
+      geishaData.setEffects({ petals: e.target.checked });
+    });
+
+    document.getElementById('veil-opacity-slider')?.addEventListener('input', (e) => {
+      const pct = Number(e.target.value);
+      geishaData.setEffects({ veilOpacity: pct / 100 });
+      const valEl = document.getElementById('veil-opacity-val');
+      if (valEl) valEl.textContent = `${pct}%`;
+    });
+
+    document.getElementById('breathe-toggle')?.addEventListener('change', (e) => {
+      isBreathing = e.target.checked;
+      geishaData.setEffects({ breathe: isBreathing });
+    });
+
+    // Display Toggles
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      geishaData.setWireframe(e.target.checked);
+    });
+
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    // Anti-ripping protections
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      controls.autoRotate = autoRotate;
+      controls.update();
+      if (geishaData.update) {
+        geishaData.update(elapsed, { breathe: isBreathing });
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
+
+

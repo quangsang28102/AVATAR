@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>Chibi Low-Poly Hunter 3D — Interactive Viewer</title>
+  <style>
+    :root {
+      --bg-dark: #11151d;
+      --panel-bg: rgba(20, 25, 34, 0.84);
+      --panel-border: rgba(232, 152, 92, 0.28);
+      --accent: #e08a4b;
+      --accent-glow: rgba(224, 138, 75, 0.42);
+      --text-main: #f3ede6;
+      --text-dim: #aba39b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      background-image: radial-gradient(circle at 46% 36%, #222a38 0%, #10141c 100%);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    /* Top Header */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 9px 15px;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      white-space: nowrap;
+    }
+
+    .brand-badge h1 {
+      font-size: 15.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+    }
+
+    .brand-badge p {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    /* Character Switcher Navbar */
+    .char-switch {
+      pointer-events: auto;
+      display: flex;
+      gap: 3px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 4px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .char-btn {
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .char-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .char-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, #c76f34, #7c3b18);
+      box-shadow: 0 2px 14px rgba(224, 138, 75, 0.5);
+      border: 1px solid rgba(244, 168, 108, 0.48);
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 8px 13px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: rgba(38, 46, 62, 0.95);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #c76f34, #7c3b18);
+      border-color: rgba(244, 168, 108, 0.45);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #dd8447, #96481d);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    /* Right Control Sidebar */
+    .sidebar {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      bottom: 24px;
+      width: 332px;
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(224, 138, 75, 0.35);
+      border-radius: 4px;
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+
+    .grid-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .grid-buttons-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .btn-option {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .btn-option:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+    }
+
+    .btn-option.active {
+      background: rgba(224, 138, 75, 0.24);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-row input[type="color"] {
+      -webkit-appearance: none;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    .control-row input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Bottom Info Badge */
+    .bottom-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .info-pill {
+      pointer-events: auto;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-pill b {
+      color: #fff;
+    }
+
+    @media (max-width: 1279px) {
+      header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+      }
+      .brand-badge {
+        order: 1;
+        padding: 7px 13px;
+        white-space: nowrap;
+      }
+      .brand-badge h1 {
+        font-size: 14px;
+      }
+      .brand-badge p {
+        font-size: 10.5px;
+      }
+      .top-actions {
+        order: 2;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .top-actions .btn {
+        padding: 7px 11px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .char-switch {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .sidebar {
+        top: 122px;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .sidebar {
+        width: 290px;
+      }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./libs/three.module.js",
+      "three/addons/": "./libs/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-badge">
+      <h1>🏹 Hunter (Thợ Săn Rừng Sâu) <span>🌲</span></h1>
+      <p>3D Low-Poly Chibi Character • Three.js</p>
+    </div>
+
+    <!-- Character Switcher Bar -->
+    <div class="char-switch">
+      <a href="index.html" class="char-btn">🌸 Chibi Girl</a>
+      <a href="wolf.html" class="char-btn">🐺 Werewolf</a>
+      <a href="seer.html" class="char-btn">🔮 Seer</a>
+      <a href="guard.html" class="char-btn">🛡️ Guard</a>
+      <a href="witch.html" class="char-btn">🧙 Witch</a>
+      <a href="hunter.html" class="char-btn active">🏹 Hunter</a>
+      <a href="geisha.html" class="char-btn">🌺 Geisha</a>
+      <a href="half-werewolf.html" class="char-btn" title="Bán Sói (Người Sói Bán Nhân)">🌓 Half-Werewolf</a>
+    </div>
+
+    <!-- Actions -->
+    <div class="top-actions">
+      <a href="pages/comparison_hunter.html" target="_blank" class="btn" title="So sánh 1:1 với ảnh mẫu gốc">🔍 So sánh 1:1</a>
+    </div>
+  </header>
+
+  <!-- Control Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Camera Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🎥 Góc nhìn Camera</div>
+      <div class="grid-buttons-3">
+        <button class="btn-option active" data-cam="front">Chính diện</button>
+        <button class="btn-option" data-cam="perspective">Góc 3/4</button>
+        <button class="btn-option" data-cam="side">Cạnh bên</button>
+        <button class="btn-option" data-cam="back">Phía sau</button>
+        <button class="btn-option" data-cam="top">Trên xuống</button>
+        <button class="btn-option" data-cam="close">Cận cảnh</button>
+      </div>
+    </div>
+
+    <!-- Pose Section -->
+    <div class="sidebar-section">
+      <div class="section-title">⚡ Dáng điệu & Tư thế (Poses)</div>
+      <div class="grid-buttons">
+        <button class="btn-option active" data-pose="idle">🧍 Mặc định (Idle)</button>
+        <button class="btn-option" data-pose="ready">🎯 Sẵn sàng (Ready)</button>
+        <button class="btn-option" data-pose="patrol">🥾 Tuần tra (Patrol)</button>
+        <button class="btn-option" data-pose="t-pose">✚ T-Pose (Rig)</button>
+      </div>
+    </div>
+
+    <!-- Environment & Motion Section -->
+    <div class="sidebar-section">
+      <div class="section-title">🌲 Bối cảnh & Chuyển động</div>
+      <div class="control-row">
+        <span>Rừng tối cách điệu (Scene)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="forest-env-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Nhịp thở nhẹ nhàng</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="breathe-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live Color Customizer -->
+    <div class="sidebar-section">
+      <div class="section-title">🎨 Bảng màu (Color Palette)</div>
+
+      <div class="control-row">
+        <span>Chóp mũ (Hat Crown)</span>
+        <input type="color" id="col-hatCrown" value="#9c6246">
+      </div>
+      <div class="control-row">
+        <span>Lưỡi trai (Hat Visor)</span>
+        <input type="color" id="col-hatBrim" value="#b47656">
+      </div>
+      <div class="control-row">
+        <span>Tai mũ (Ear Flaps)</span>
+        <input type="color" id="col-hatFlap" value="#9e654a">
+      </div>
+      <div class="control-row">
+        <span>Tóc (Hair)</span>
+        <input type="color" id="col-hair" value="#522f1f">
+      </div>
+      <div class="control-row">
+        <span>Da Chibi (Skin)</span>
+        <input type="color" id="col-skin" value="#ea9e79">
+      </div>
+      <div class="control-row">
+        <span>Lông mày (Eyebrows)</span>
+        <input type="color" id="col-eyebrows" value="#2b1712">
+      </div>
+      <div class="control-row">
+        <span>Áo ghi-lê (Vest)</span>
+        <input type="color" id="col-vest" value="#89533a">
+      </div>
+      <div class="control-row">
+        <span>Áo sơ mi trong (Shirt)</span>
+        <input type="color" id="col-shirt" value="#ceb495">
+      </div>
+      <div class="control-row">
+        <span>Quần (Pants)</span>
+        <input type="color" id="col-pants" value="#4e3933">
+      </div>
+      <div class="control-row">
+        <span>Giày bốt (Boots)</span>
+        <input type="color" id="col-boots" value="#4b312a">
+      </div>
+      <div class="control-row">
+        <span>Túi đeo hông (Satchel)</span>
+        <input type="color" id="col-satchel" value="#9f5f3b">
+      </div>
+      <div class="control-row">
+        <span>Dây đeo chéo (Strap)</span>
+        <input type="color" id="col-strap" value="#7c4830">
+      </div>
+      <div class="control-row">
+        <span>Báng & ốp gỗ súng</span>
+        <input type="color" id="col-rifleWood" value="#925736">
+      </div>
+      <div class="control-row">
+        <span>Nòng thép súng</span>
+        <input type="color" id="col-rifleMetal" value="#999ca8">
+      </div>
+      <div class="control-row">
+        <span>Khóa thắt lưng (Buckle)</span>
+        <input type="color" id="col-buckle" value="#a6a9b2">
+      </div>
+
+      <button id="btn-reset-colors" class="btn" style="width:100%; justify-content:center; margin-top:4px;">↺ Khôi phục màu mặc định</button>
+    </div>
+
+    <!-- Render Settings -->
+    <div class="sidebar-section">
+      <div class="section-title">⚙️ Hiển thị & Kết xuất</div>
+      <div class="control-row">
+        <span>Lưới đa giác (Wireframe)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="wireframe-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Tự động xoay (Auto-Rotate)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="auto-rotate-toggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span>Bóng đổ sàn (Shadows)</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="shadows-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info Bar -->
+  <div class="bottom-bar">
+    <div class="info-pill">
+      <span>🖱️ Chuột trái: <b>Xoay 360°</b></span>
+    </div>
+    <div class="info-pill">
+      <span>🔍 Con lăn: <b>Phóng to/Thu nhỏ</b></span>
+    </div>
+    <div class="info-pill">
+      <span>📌 Chuột phải: <b>Di chuyển camera</b></span>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/OrbitControls.js';
+    import { createHunterCharacter, HUNTER_DEFAULT_COLORS } from './js/hunter-model.js';
+
+    const container = document.getElementById('canvas-container');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x131822);
+    scene.fog = new THREE.FogExp2(0x131822, 0.11);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(30, width / height, 0.1, 100);
+    const target = new THREE.Vector3(0, 0.40, 0);
+    camera.position.set(0, 0.44, 2.22);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.copy(target);
+    controls.minDistance = 0.85;
+    controls.maxDistance = 6.0;
+    controls.maxPolarAngle = Math.PI * 0.52;
+    controls.update();
+
+    // Warm Upper-Left Concept Lighting + Cool Twilight Fill & Under-Visor Soft Bounce
+    const ambientLight = new THREE.AmbientLight(0xd2dae8, 0.42);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xf6ede2, 0x202229, 0.56);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffeed8, 1.56);
+    keyLight.position.set(-2.4, 3.8, 2.8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.width = 2048;
+    keyLight.shadow.mapSize.height = 2048;
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 12;
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x88a3c4, 0.44);
+    fillLight.position.set(3.1, 1.6, 2.0);
+    scene.add(fillLight);
+
+    const frontLight = new THREE.DirectionalLight(0xfaf2e8, 0.48);
+    frontLight.position.set(0, 0.45, 3.4);
+    scene.add(frontLight);
+
+    const backRim = new THREE.DirectionalLight(0xcddbf0, 0.56);
+    backRim.position.set(0.6, 2.2, -3.0);
+    scene.add(backRim);
+
+    // Base Shadow Disc
+    const floorGeo = new THREE.CylinderGeometry(1.75, 1.85, 0.06, 28);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x1f1e24,
+      roughness: 0.94,
+      metalness: 0.03,
+      flatShading: true
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.03;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Optional Stylized Dark Forest Viewer Backdrop (External to hunterData.model!)
+    const viewerEnvGroup = new THREE.Group();
+    viewerEnvGroup.name = 'viewerForestEnvironment';
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x261f22, roughness: 0.92, flatShading: true });
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0x1e332c, roughness: 0.90, flatShading: true });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x2e313b, roughness: 0.88, flatShading: true });
+    const grassMat = new THREE.MeshStandardMaterial({ color: 0x4b632d, roughness: 0.85, flatShading: true });
+
+    const treeSpecs = [
+      { x: -1.12, z: -0.95, s: 1.05, r: 0.2 },
+      { x:  1.15, z: -1.05, s: 1.18, r: -0.4 },
+      { x: -1.55, z: -0.15, s: 0.90, r: 0.8 },
+      { x:  1.58, z: -0.25, s: 0.95, r: -0.9 }
+    ];
+    treeSpecs.forEach((t) => {
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.11 * t.s, 0.16 * t.s, 1.35 * t.s, 7), trunkMat);
+      trunk.position.y = 0.675 * t.s;
+      trunk.receiveShadow = true;
+      tree.add(trunk);
+
+      const canopy1 = new THREE.Mesh(new THREE.ConeGeometry(0.52 * t.s, 0.72 * t.s, 7), canopyMat);
+      canopy1.position.y = 1.25 * t.s;
+      tree.add(canopy1);
+
+      const canopy2 = new THREE.Mesh(new THREE.ConeGeometry(0.40 * t.s, 0.60 * t.s, 7), canopyMat);
+      canopy2.position.y = 1.62 * t.s;
+      tree.add(canopy2);
+
+      tree.position.set(t.x, 0, t.z);
+      tree.rotation.y = t.r;
+      viewerEnvGroup.add(tree);
+    });
+
+    const rockLeft = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24, 0), rockMat);
+    rockLeft.position.set(-0.92, 0.10, -0.45);
+    rockLeft.scale.set(1.2, 0.75, 1.0);
+    viewerEnvGroup.add(rockLeft);
+
+    const rockRight = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28, 0), rockMat);
+    rockRight.position.set(0.95, 0.12, -0.40);
+    rockRight.scale.set(1.3, 0.82, 0.9);
+    viewerEnvGroup.add(rockRight);
+
+    const grassTuftSpecs = [
+      [-0.75, 0.25, 0.3], [-0.82, 0.32, -0.2], [0.78, 0.28, 0.5],
+      [0.85, 0.18, -0.4], [-0.55, -0.52, 0.1], [0.62, -0.50, -0.3]
+    ];
+    grassTuftSpecs.forEach(([gx, gz, rot]) => {
+      for (let k = -1; k <= 1; k++) {
+        const blade = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.14, 4), grassMat);
+        blade.position.set(gx + k * 0.024, 0.06, gz);
+        blade.rotation.set(0.12, rot, k * 0.22);
+        viewerEnvGroup.add(blade);
+      }
+    });
+    scene.add(viewerEnvGroup);
+
+    // Hunter Character Model (Kept strictly isolated from viewerEnvGroup for clean GLB/OBJ exports)
+    const hunterData = createHunterCharacter();
+    scene.add(hunterData.model);
+
+    // State
+    let autoRotate = false;
+    let isBreathing = true;
+
+    // Camera Presets
+    document.querySelectorAll('[data-cam]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cam]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cam = btn.dataset.cam;
+        if (cam === 'front') {
+          camera.position.set(0, 0.44, 2.22);
+          controls.target.set(0, 0.40, 0);
+        } else if (cam === 'perspective') {
+          camera.position.set(1.26, 0.58, 1.88);
+          controls.target.set(0, 0.40, 0);
+        } else if (cam === 'side') {
+          camera.position.set(2.15, 0.43, 0.05);
+          controls.target.set(0, 0.40, 0);
+        } else if (cam === 'back') {
+          camera.position.set(0, 0.45, -2.22);
+          controls.target.set(0, 0.40, 0);
+        } else if (cam === 'top') {
+          camera.position.set(0, 2.15, 0.62);
+          controls.target.set(0, 0.40, 0);
+        } else if (cam === 'close') {
+          camera.position.set(0.10, 0.60, 0.98);
+          controls.target.set(0, 0.58, 0.02);
+        }
+        controls.update();
+      });
+    });
+
+    // Pose Presets
+    document.querySelectorAll('[data-pose]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-pose]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        hunterData.setPose(btn.dataset.pose);
+      });
+    });
+
+    // Environment & Motion Controls
+    document.getElementById('forest-env-toggle')?.addEventListener('change', (e) => {
+      viewerEnvGroup.visible = e.target.checked;
+    });
+
+    document.getElementById('breathe-toggle')?.addEventListener('change', (e) => {
+      isBreathing = e.target.checked;
+      hunterData.setEffects({ breathe: isBreathing });
+    });
+
+    // Live Color Pickers
+    const colorMap = {
+      'col-hatCrown': 'hatCrown',
+      'col-hatBrim': 'hatBrim',
+      'col-hatFlap': 'hatFlap',
+      'col-hair': 'hair',
+      'col-skin': 'skin',
+      'col-eyebrows': 'eyebrows',
+      'col-vest': 'vest',
+      'col-shirt': 'shirt',
+      'col-pants': 'pants',
+      'col-boots': 'boots',
+      'col-satchel': 'satchel',
+      'col-strap': 'strap',
+      'col-rifleWood': 'rifleWood',
+      'col-rifleMetal': 'rifleMetal',
+      'col-buckle': 'buckle'
+    };
+
+    Object.keys(colorMap).forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', (e) => {
+          const prop = colorMap[id];
+          hunterData.setColors({ [prop]: e.target.value });
+        });
+      }
+    });
+
+    document.getElementById('btn-reset-colors')?.addEventListener('click', () => {
+      hunterData.setColors(HUNTER_DEFAULT_COLORS);
+      Object.entries(colorMap).forEach(([id, prop]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = HUNTER_DEFAULT_COLORS[prop];
+      });
+    });
+
+    // Display Toggles
+    document.getElementById('wireframe-toggle')?.addEventListener('change', (e) => {
+      hunterData.setWireframe(e.target.checked);
+    });
+
+    document.getElementById('auto-rotate-toggle')?.addEventListener('change', (e) => {
+      autoRotate = e.target.checked;
+      controls.autoRotateSpeed = 2.0;
+    });
+
+    document.getElementById('shadows-toggle')?.addEventListener('change', (e) => {
+      renderer.shadowMap.enabled = e.target.checked;
+      floorMesh.visible = e.target.checked;
+    });
+
+    // Anti-ripping protections
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
+    window.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+        (e.ctrlKey && ['u', 'U', 's', 'S'].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      controls.autoRotate = autoRotate;
+      controls.update();
+      hunterData.update(elapsed, { breathe: isBreathing });
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
+
+

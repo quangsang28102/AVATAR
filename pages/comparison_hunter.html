@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>So Sánh Hunter 3D vs Concept 2D</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #14161e;
+      color: #eee9e2;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 18px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      color: #f3c492;
+    }
+    .grid {
+      display: flex;
+      gap: 24px;
+      background: #1d202b;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 210, 155, 0.22);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #cdbda9;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .img-box {
+      position: relative;
+      width: 460px;
+      height: 600px;
+      background: #171923;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .img-box img {
+      position: absolute;
+      left: 50%;
+      max-width: none;
+      max-height: none;
+    }
+    /* Height-normalized framing: both characters span 470px (apex y=74.6px .. sole y=544.6px) */
+    .img-box img.ref-normalized {
+      top: 0;
+      width: 428.2px;
+      height: 586.4px;
+      transform: translateX(-50%);
+    }
+    .img-box img.render-normalized {
+      top: -117.0px;
+      width: 618.7px;
+      height: 847.2px;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <h1>So Sánh Đối Chiếu: Hunter Concept 2D vs Chibi Low-Poly Hunter 3D (Three.js)</h1>
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Ảnh Gốc Concept (hunter_ref.png — Chuẩn Hóa Chiều Cao)</div>
+      <div class="img-box">
+        <img class="ref-normalized" src="../assets/references/hunter_ref.png" alt="Hunter Reference" />
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bản Dựng 3D Góc Concept (Hunter V6 — Chuẩn Hóa Chiều Cao)</div>
+      <div class="img-box">
+        <img class="render-normalized" src="../assets/renders/render_hunter_concept.png" alt="Hunter 3D Render" />
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
